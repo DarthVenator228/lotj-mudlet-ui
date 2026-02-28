@@ -1,7 +1,7 @@
 [
        {
               "name": "Northwest",
-              "isActive": "yes",
+              "isActive": "no",
               "command": "retreat nw",
               "script": "",
               "keys": "shift+keypad+home",
@@ -9,7 +9,7 @@
        },
        {
               "name": "North",
-              "isActive": "yes",
+              "isActive": "no",
               "command": "retreat n",
               "script": "",
               "keys": "shift+keypad+up",
@@ -17,7 +17,7 @@
        },
        {
               "name": "Northeast",
-              "isActive": "yes",
+              "isActive": "no",
               "command": "retreat ne",
               "script": "",
               "keys": "shift+keypad+pgup",
@@ -25,7 +25,7 @@
        },
        {
               "name": "West",
-              "isActive": "yes",
+              "isActive": "no",
               "command": "retreat w",
               "script": "",
               "keys": "shift+keypad+left",
@@ -33,7 +33,7 @@
        },
        {
               "name": "East",
-              "isActive": "yes",
+              "isActive": "no",
               "command": "retreat e",
               "script": "",
               "keys": "shift+keypad+right",
@@ -41,7 +41,7 @@
        },
        {
               "name": "Southwest",
-              "isActive": "yes",
+              "isActive": "no",
               "command": "retreat sw",
               "script": "",
               "keys": "shift+keypad+end",
@@ -49,7 +49,7 @@
        },
        {
               "name": "South",
-              "isActive": "yes",
+              "isActive": "no",
               "command": "retreat s",
               "script": "",
               "keys": "shift+keypad+down",
@@ -57,7 +57,7 @@
        },
        {
               "name": "Southeast",
-              "isActive": "yes",
+              "isActive": "no",
               "command": "retreat se",
               "script": "",
               "keys": "shift+keypad+pgdn",
@@ -65,7 +65,7 @@
        },
        {
               "name": "Up",
-              "isActive": "yes",
+              "isActive": "no",
               "command": "retreat u",
               "script": "",
               "keys": "shift+keypad+plus",
@@ -73,7 +73,7 @@
        },
        {
               "name": "Down",
-              "isActive": "yes",
+              "isActive": "no",
               "command": "retreat d",
               "script": "",
               "keys": "shift+keypad+minus",
