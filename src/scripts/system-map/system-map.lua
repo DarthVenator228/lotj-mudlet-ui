@@ -1,3 +1,4 @@
+---@diagnostic disable: deprecated
 lotj = lotj or {}
 lotj.systemMap = lotj.systemMap or {
   mapRange = 2000,
@@ -10,13 +11,93 @@ local labelWidth = 200
 local labelHeight = 16
 
 local controlButtonStyle = [[
-  background-color: rgba(0,0,0,100%);
-  border: 2px solid rgb(0, 246, 0);
-  border-radius: 8px;
+  QLabel {
+    background-color: rgba(0,0,0,100%);
+    border: 2px solid rgb(0, 246, 0);
+    border-radius: 8px;
+  }
+    QLabel::hover {
+      background-color: rgba(0,246,0,40%);
+      color: white;
+    }
+    QLabel::!hover {
+      color: cyan;
+      background-color: rgba(0,246,0,10%);
+    }
 ]]
+
+function generateRadarImage(path, size)
+  size = size or 256
+  local radius = size / 2
+  local cx, cy = radius, radius
+
+  local f = io.open(path, "w")
+  f:write("P3\n", size, " ", size, "\n255\n")
+
+  local spokes = 12
+  local spokeAngles = {}
+  for i = 0, spokes - 1 do
+    spokeAngles[i+1] = (i / spokes) * (2 * math.pi)
+  end
+
+  -- === Adjustable line thickness (in pixels) ===
+  local lineWidth = 4
+  local halfWidth = lineWidth / 2
+
+  for y = 0, size - 1 do
+    for x = 0, size - 1 do
+      local dx = x - cx
+      local dy = y - cy
+      local dist = math.sqrt(dx*dx + dy*dy)
+
+      local r,g,b = 0,0,0
+
+      if dist <= radius then
+        -- Glow
+        local t = 1 - (dist / radius)
+        local glow = math.floor(120 * (t ^ 3.2))
+        r, g, b = 0, glow, 0
+
+        -- === Rings (constant pixel thickness) ===
+        for i = 1,3 do
+          local rr = radius * (i/3)
+          if math.abs(dist - rr) <= halfWidth then
+            r, g, b = 0, 180, 0
+          end
+        end
+
+        -- === Spokes (convert pixel width → angular width) ===
+        if dist > 0 then
+          local angle = math.atan2(dy, dx)
+
+          for _,a in ipairs(spokeAngles) do
+            local diff = math.abs(math.atan2(math.sin(angle-a), math.cos(angle-a)))
+
+            -- convert pixel width to radians at this radius
+            local angularWidth = halfWidth / dist
+
+            if diff <= angularWidth then
+              r, g, b = 0, 160, 0
+              break
+            end
+          end
+        end
+      end
+
+      f:write(r, " ", g, " ", b, " ")
+    end
+    f:write("\n")
+  end
+
+  f:close()
+end
 
 function lotj.systemMap.setup()
   disableTrigger("system-map-radar")
+
+  if not io.exists(getMudletHomeDir().."/@PKGNAME@/radar.ppm") then
+    generateRadarImage(getMudletHomeDir().."/@PKGNAME@/radar.ppm", 1000)
+  end
 
   local tabContents = lotj.layout.upperRightTabData.contents["system"]
   lotj.systemMap.background = Geyser.Label:new({}, tabContents)
@@ -26,7 +107,8 @@ function lotj.systemMap.setup()
   lotj.systemMap.background:move(0, 0)
   lotj.systemMap.background:resize("100%", "100%")
   lotj.systemMap.container = Geyser.Label:new({}, tabContents)
-  local bg_image = getMudletHomeDir().."/@PKGNAME@/radar.png"
+  -- local bg_image = getMudletHomeDir().."/@PKGNAME@/radar.png"
+  local bg_image = getMudletHomeDir().."/@PKGNAME@/radar.ppm"
   lotj.systemMap.container:setStyleSheet([[
     border-image: url(]]..bg_image..[[);
   ]])
@@ -34,8 +116,8 @@ function lotj.systemMap.setup()
   lotj.setup.registerEventHandler("sysWindowResizeEvent", lotj.systemMap.resizeToSquare)
 
   local zoomInButton = Geyser.Label:new({
-    x = "13%", y = "5%",
-    width = "9%", height = "13%",
+    x = "10%", y = "5%",
+    width = "6%", height = "8%",
   }, tabContents)
   zoomInButton:setStyleSheet(controlButtonStyle)
   zoomInButton:echo("+", "white", "c18b")
@@ -52,7 +134,7 @@ function lotj.systemMap.setup()
 
   local zoomOutButton = Geyser.Label:new({
     x = "2%", y = "5%",
-    width = "9%", height = "13%",
+    width = "6%", height = "8%",
   }, tabContents)
   zoomOutButton:setStyleSheet(controlButtonStyle)
   zoomOutButton:echo("-", "white", "c18b")
@@ -68,8 +150,8 @@ function lotj.systemMap.setup()
   end)
 
   local refreshButton = Geyser.Label:new({
-    x = "2%", y = "20%",
-    width = "20%", height = "13%",
+    x = "2%", y = "15%",
+    width = "14%", height = "8%",
   }, tabContents)
   refreshButton:setStyleSheet(controlButtonStyle)
   refreshButton:echo("Radar", "white", "12c")

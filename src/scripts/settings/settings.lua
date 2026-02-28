@@ -69,7 +69,7 @@ local primaryConfigDefinition = {
           name = "Local",
           key = "notif_local",
           type = "toggle",
-          default = true,
+          default = false,
           description = "Enable Local tab notifications",
           icon = "👥"
         },
@@ -77,7 +77,7 @@ local primaryConfigDefinition = {
           name = "CommNet",
           key = "notif_commnet",
           type = "toggle",
-          default = true,
+          default = false,
           description = "Enable CommNet tab notifications",
           icon = "🎧"
         },
@@ -85,7 +85,7 @@ local primaryConfigDefinition = {
           name = "Clan",
           key = "notif_clan",
           type = "toggle",
-          default = true,
+          default = false,
           description = "Enable Clan tab notifications",
           icon = "🏰"
         },
@@ -93,7 +93,7 @@ local primaryConfigDefinition = {
           name = "Broadcast",
           key = "notif_broadcast",
           type = "toggle",
-          default = true,
+          default = false,
           description = "Enable Broadcast tab notifications",
           icon = "🔊"
         },
@@ -101,7 +101,7 @@ local primaryConfigDefinition = {
           name = "OOC",
           key = "notif_ooc",
           type = "toggle",
-          default = true,
+          default = false,
           description = "Enable OOC tab notifications",
           icon = "📻"
         },
@@ -188,7 +188,7 @@ local primaryConfigDefinition = {
     lotj.chat.debugLog("Saving configuration...")
     -- Example: save to JSON file
     local json = require("dkjson")
-    local file = io.open(getMudletHomeDir() .. "/lotj-ui/settings.json", "w")
+    local file = io.open(getMudletHomeDir() .. "/settings.json", "w")
     if file then
 ---@diagnostic disable-next-line: param-type-mismatch
       file:write(json.encode(configTable))
@@ -201,7 +201,7 @@ local primaryConfigDefinition = {
     lotj.chat.debugLog("Loading configuration...")
     -- Example: load from JSON file
     local json = require("dkjson")
-    local file = io.open(getMudletHomeDir() .. "/lotj-ui/settings.json", "r")
+    local file = io.open(getMudletHomeDir() .. "/settings.json", "r")
     if file then
       local content = file:read("*all")
       file:close()
