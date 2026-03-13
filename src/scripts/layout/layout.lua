@@ -47,17 +47,19 @@ local vanish = [[
 ]]
 
 
-local function createTabbedPanel(tabData, container, tabList)
+function lotj.layout.createTabbedPanel(tabData, container, tabList)
   tabData.tabs = {}
   tabData.contents = {}
 
   local tabContainerHeight = getFontSize()*2+4
   local tabContainer = Geyser.HBox:new({
+    name = "tabContainer_"..tabData.name,
     x = "2%", y = 0,
     width = "96%", height = tabContainerHeight,
   }, container)
 
   local contentsContainer = Geyser.Label:new({
+    name = "contentsContainer_"..tabData.name,
     x = 0, y = tabContainerHeight,
     width = "100%",
   }, container)
@@ -78,6 +80,7 @@ local function createTabbedPanel(tabData, container, tabList)
     local label = tabInfo.label
     
     tabData.tabs[keyword] = Geyser.Label:new({
+      name = "lotj.layout.tabData.tabs_"..keyword,
       h_stretch_factor = (#tabInfo.label + 4) / totalSpace,
     }, tabContainer)
     tabData.tabs[keyword]:setClickCallback("lotj.layout.selectTab", tabData, keyword)
@@ -85,6 +88,7 @@ local function createTabbedPanel(tabData, container, tabList)
     tabData.tabs[keyword]:echo("<center>"..label)
     
     tabData.contents[keyword] = Geyser.Label:new({
+      name = "lotj.layout.tabData.contents_"..keyword,
       x = 0, y = 0,
       width = "100%",
       height = "100%",
@@ -148,6 +152,7 @@ function lotj.layout.setup()
   if lotj.layout.drawn then return end
 
   lotj.layout.rightPanel = Geyser.Container:new({
+    name = "lotj.layout.rightPanel",
     width = rightPanelWidthPct.."%",
     x = (100-rightPanelWidthPct).."%",
     y = 0, height = "100%",
@@ -164,14 +169,9 @@ function lotj.layout.setup()
     height = upperRightHeightPct.."%",
   }, lotj.layout.rightPanel)
 
-  lotj.layout.upperRightTabData = {}
-
+  lotj.layout.upperRightTabData = {name = "upper"}
   lotj.layout.upperRightTabData.tabList = {}
-  table.insert(lotj.layout.upperRightTabData.tabList, {keyword = "map", label = "Map"})
-  table.insert(lotj.layout.upperRightTabData.tabList, {keyword = "system", label = "System"})
-  table.insert(lotj.layout.upperRightTabData.tabList, {keyword = "galaxy", label = "Galaxy"})
 
-  createTabbedPanel(lotj.layout.upperRightTabData, lotj.layout.upperContainer, lotj.layout.upperRightTabData.tabList)
 
   -- Lower-right panel, for chat history
   lotj.layout.lowerContainer = Geyser.Container:new({
@@ -181,9 +181,13 @@ function lotj.layout.setup()
     height = (100-upperRightHeightPct).."%",
   }, lotj.layout.rightPanel)
 
-  lotj.layout.lowerRightTabData = {}
-
+  lotj.layout.lowerRightTabData = {name = "lower"}
   lotj.layout.lowerRightTabData.tabList = {}
+
+  table.insert(lotj.layout.upperRightTabData.tabList, {keyword = "map", label = "Map"})
+  table.insert(lotj.layout.upperRightTabData.tabList, {keyword = "system", label = "System"})
+  table.insert(lotj.layout.upperRightTabData.tabList, {keyword = "galaxy", label = "Galaxy"})
+
   table.insert(lotj.layout.lowerRightTabData.tabList, {keyword = "all", label = "All"})
   table.insert(lotj.layout.lowerRightTabData.tabList, {keyword = "local", label = "Local"})
   table.insert(lotj.layout.lowerRightTabData.tabList, {keyword = "commnet", label = "CommNet"})
@@ -196,10 +200,23 @@ function lotj.layout.setup()
     table.insert(lotj.layout.lowerRightTabData.tabList, {keyword = "debug", label = "Debug"})
   end
 
+  -- Here we check if any compatible modules need to be loaded into the UI
+  -- This could certainly be fortified, but for now just hope mods exists
+  if lotj_mods then
+    for k, _ in pairs(lotj_mods) do
+      if lotj_mods[k].location == "upper" then
+        table.insert(lotj.layout.upperRightTabData.tabList, lotj_mods[k].newTab)
+      elseif lotj_mods[k].location == "lower" then
+        table.insert(lotj.layout.lowerRightTabData.tabList, lotj_mods[k].newTab)
+      end
+    end
+  end
+
   -- Settings is a special case, don't try to echo to it like the others
   table.insert(lotj.layout.lowerRightTabData.tabList, {keyword = "settings", label = "⚙️"})
 
-  createTabbedPanel(lotj.layout.lowerRightTabData, lotj.layout.lowerContainer, lotj.layout.lowerRightTabData.tabList)
+  lotj.layout.createTabbedPanel(lotj.layout.upperRightTabData, lotj.layout.upperContainer, lotj.layout.upperRightTabData.tabList)
+  lotj.layout.createTabbedPanel(lotj.layout.lowerRightTabData, lotj.layout.lowerContainer, lotj.layout.lowerRightTabData.tabList)
 
   -- Hacky, but selectTab relies on these lines, do not delete
   lotj.layout.upperRightTabData.selectedTab = "map"
@@ -218,6 +235,7 @@ function lotj.layout.setup()
   -- Lower info panel, for prompt hp/move gauges and other basic status
   lotj.layout.lowerInfoPanelHeight = getFontSize()*2.5
   lotj.layout.lowerInfoPanel = Geyser.HBox:new({
+    name = "lotj.layout.lowerInfoPanel",
     x = 0, y = -lotj.layout.lowerInfoPanelHeight,
     width = (100-rightPanelWidthPct).."%",
     height = lotj.layout.lowerInfoPanelHeight,
@@ -227,6 +245,7 @@ function lotj.layout.setup()
   -- Ship overlay panel, shown just above the bottom info panel when piloting
   lotj.layout.shipOverlayHeight = getFontSize()*2.5
   lotj.layout.shipOverlay = Geyser.HBox:new({
+    name = "lotj.layout.shipOverlay",
     x = 0, y = -(lotj.layout.lowerInfoPanelHeight + lotj.layout.shipOverlayHeight),
     width = (100-rightPanelWidthPct).."%",
     height = lotj.layout.shipOverlayHeight,
@@ -241,6 +260,7 @@ function lotj.layout.teardown()
   lotj.layout.lowerContainer:hide()
   lotj.layout.lowerInfoPanel:hide()
   lotj.layout.shipOverlay:hide()
+  lotj.layout.drawn = false
   setBorderRight(0)
   setBorderBottom(0)
   setBorderTop(0)

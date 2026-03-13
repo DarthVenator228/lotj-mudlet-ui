@@ -174,6 +174,27 @@ local primaryConfigDefinition = {
         --   inputType = "number"
         -- }
       }
+    },
+    {
+      name = "Debug Options",
+      items = {
+        {
+          name = "GMCP Output",
+          key = "debugGMCP_out",
+          type = "toggle",
+          default = true,
+          description = "Route all GMCP traffic to the debug window",
+          icon = "🚂"
+        },
+        {
+          name = "Debug Console",
+          key = "debugconsole",
+          type = "toggle",
+          default = true,
+          description = "Enable input to the debug window - requires profile reset to take effect",
+          icon = "⌨️"
+        }
+      }
     }
   },
 

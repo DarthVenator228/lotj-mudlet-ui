@@ -759,6 +759,7 @@ function lotj.galaxyMap.drawSystems()
 
     if label == nil then
       label = Geyser.Label:new({
+        name = "lotj.galaxyMap.drawSystems.label_"..system.name,
         height = labelHeight,
         width = labelWidth,
         fillBg = 0,

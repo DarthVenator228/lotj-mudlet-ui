@@ -336,6 +336,7 @@ function lotj.mapper.setup()
     -- Preserve this as a global. We can only create one mapper in a profile, so if we
     -- unload and reload this UI, we need to reuse what was created before.
     geyserMapper = Geyser.Mapper:new({
+      name = "lotj_mapper",
       x = 0, y = 0,
       width = "100%",
       height = "100%",

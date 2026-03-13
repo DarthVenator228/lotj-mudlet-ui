@@ -70,5 +70,13 @@
               "script": "lotj.layout.selectTabNumber(lotj.layout.lowerRightTabData, 9)",
               "keys": "alt+9",
               "isFolder": "no"
+       },
+       {
+              "name": "ten",
+              "isActive": "yes",
+              "command": "",
+              "script": "lotj.layout.selectTabNumber(lotj.layout.lowerRightTabData, 10)",
+              "keys": "alt+0",
+              "isFolder": "no"
        }
 ]

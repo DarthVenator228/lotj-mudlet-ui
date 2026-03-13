@@ -1,4 +1,7 @@
 ---@diagnostic disable: redundant-parameter
+
+debugc("lotj-ui -> setup.lua")
+
 lotj = lotj or {}
 lotj.setup = lotj.setup or {}
 lotj.setup.eventHandlerKillIds = lotj.setup.eventHandlerKillIds or {}
@@ -81,7 +84,9 @@ function doSetup()
     func()
   end
 
+  debugc("lotj-ui finished")
   raiseEvent("lotjUiLoaded")
+  geyserMapper:raise()
 end
 
 local function ensureDepsAndSetup()
@@ -101,14 +106,14 @@ local function ensureDepsAndSetup()
   downloadFile(DKJSON_PATH, DKJSON_URL)
 end
 
-local function teardown()
+function lotj.setup.teardown()
   for _, killId in ipairs(lotj.setup.eventHandlerKillIds) do
     killAnonymousEventHandler(killId)
   end
 
   lotj.mapper.teardown()
   lotj.layout.teardown()
-  lotj = nil
+  -- lotj = nil
 end
 
 lotj.setup.registerEventHandler("sysLoadEvent", function()
@@ -128,7 +133,7 @@ end)
 
 lotj.setup.registerEventHandler("sysUninstallPackage", function(_, pkgName)
   if pkgName ~= "lotj-ui" then return end
-  teardown()
+  lotj.setup.teardown()
 end)
 
 lotj.setup.registerEventHandler("sysProtocolEnabled", function(_, protocol)

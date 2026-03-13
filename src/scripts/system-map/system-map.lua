@@ -100,16 +100,17 @@ function lotj.systemMap.setup()
   end
 
   local tabContents = lotj.layout.upperRightTabData.contents["system"]
-  lotj.systemMap.background = Geyser.Label:new({}, tabContents)
+  lotj.systemMap.background = Geyser.Label:new({name = "lotj.systemMap.background"}, tabContents)
   lotj.systemMap.background:setStyleSheet([[
     background-color: black;
   ]])
   lotj.systemMap.background:move(0, 0)
   lotj.systemMap.background:resize("100%", "100%")
-  lotj.systemMap.container = Geyser.Label:new({}, tabContents)
+  lotj.systemMap.container = Geyser.Label:new({name = "lotj.systemMap.container"}, tabContents)
   -- local bg_image = getMudletHomeDir().."/@PKGNAME@/radar.png"
   local bg_image = getMudletHomeDir().."/@PKGNAME@/radar.ppm"
   lotj.systemMap.container:setStyleSheet([[
+    background-color: rgba(0,0,0,0);
     border-image: url(]]..bg_image..[[);
   ]])
   lotj.systemMap.resizeToSquare()
@@ -161,10 +162,10 @@ function lotj.systemMap.setup()
   end)
 
 
-  rangeCircle = rangeCircle or Geyser.Label:new({fillBg = 0}, lotj.systemMap.container)
+  rangeCircle = Geyser.Label:new({name = "lotj.systemMap.rangeCircle", fillBg = 0}, lotj.systemMap.container)
   rangeCircle:move(0, 0)
 
-  lotj.systemMap.rangeLabel = lotj.systemMap.rangeLabel or Geyser.Label:new({fillBg = 0}, lotj.systemMap.container)
+  lotj.systemMap.rangeLabel = Geyser.Label:new({name = "lotj.systemMap.rangeLabel", fillBg = 0}, lotj.systemMap.container)
   lotj.systemMap.rangeLabel:setStyleSheet("background-color: rgba(0,0,0,0)")
   lotj.systemMap.rangeLabel:resize(50, 20)
   lotj.systemMap.rangeLabel:echo(lotj.systemMap.mapRange, "green", "10c")
@@ -360,8 +361,9 @@ end
 -- Return existing (or create new) Geyser labels for a given point and label
 -- We store and reuse these so that we don't accumulate infinite label objects, since Geyser doesn't give us a way to delete elements, only hide them
 function lotj.systemMap.pointAndLabel(idx, item)
-  lotj.systemMap.genPoints[idx] = lotj.systemMap.genPoints[idx] or Geyser.Label:new({}, lotj.systemMap.container)
+  lotj.systemMap.genPoints[idx] = lotj.systemMap.genPoints[idx] or Geyser.Label:new({name = "lotj.systemMap.genPoints_"..idx}, lotj.systemMap.container)
   lotj.systemMap.genLabels[idx] = lotj.systemMap.genLabels[idx] or Geyser.Label:new({
+    name = "lotj.systemMap.genLabels_"..idx,
     fillBg = 0,
     height = math.ceil(getFontSize()*1.6), width = (lotj.systemMap.radarItemHandling(item) + 5) * 11 or labelWidth
     }, lotj.systemMap.container
@@ -408,7 +410,7 @@ function lotj.systemMap.resizeToSquare()
   if contW >= contH then
     width = contH
     x = (contW-contH)/2
-    x = .33 * contW
+    -- x = .33 * contW -- Uncomment to offset radar image
   else
     height = contW
     y = (contH-contW)/2
