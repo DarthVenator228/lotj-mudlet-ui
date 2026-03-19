@@ -1,6 +1,13 @@
 lotj = lotj or {}
 lotj.chat = lotj.chat or {}
 
+local backgroundTabStyle = [[
+  background-color: #000000;
+  border: 1px solid #00aaaa;
+  margin: 2px 0px 0px 0px;
+  font-family: ]] .. getFont() .. [[;
+]]
+
 function lotj.chat.setup()
   for keyword, contentsContainer in pairs(lotj.layout.lowerRightTabData.contents) do
     if keyword == "settings" then
@@ -33,6 +40,7 @@ function lotj.chat.setup()
   end
   if lotj.settings.debugMode and lotj.settings.debugconsole then
     lotj.chat["debug"]:enableCommandLine()
+    lotj.chat["debug"]:setCmdLineStyleSheet(backgroundTabStyle)
 
     local function run_lua_code(text)
       lotj.chat["debug"]:cecho("<reset><ansi_yellow>"..text..'<reset>\n')

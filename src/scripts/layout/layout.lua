@@ -5,12 +5,20 @@ local rightPanelWidthPct = 40
 local upperRightHeightPct = 50
 
 local inactiveTabStyle = [[
-  background-color: #333333;
-  border: 1px solid #00aaaa;
-  border-top-right-radius: 4px;
-  border-top-left-radius: 4px;
-  margin: 3px 3px 0px 3px;
-  font-family: ]] .. getFont() .. [[;
+  QLabel {
+    background-color: #333333;
+    border: 1px solid #00aaaa;
+    border-top-right-radius: 4px;
+    border-top-left-radius: 4px;
+    margin: 3px 3px 3px 3px;
+    font-family: ]] .. getFont() .. [[;
+  }
+    QLabel::hover {
+      background-color: rgba(0, 255, 255, 40%)
+    }
+    QLabel::!hover {
+      background-color :rgba(0, 255, 255, 10%)
+    }
 ]]
 
 local activeTabStyle = [[
@@ -28,8 +36,7 @@ local notificationTabStyle = [[
   border: 1px solid #00aaaa;
   border-top-right-radius: 4px;
   border-top-left-radius: 4px;
-  border-bottom: none;
-  margin: 3px 3px 0px 3px;
+  margin: 3px 3px 3px 3px;
   font-family: ]] .. getFont() .. [[;
 ]]
 
@@ -84,6 +91,7 @@ function lotj.layout.createTabbedPanel(tabData, container, tabList)
       h_stretch_factor = (#tabInfo.label + 4) / totalSpace,
     }, tabContainer)
     tabData.tabs[keyword]:setClickCallback("lotj.layout.selectTab", tabData, keyword)
+    tabData.tabs[keyword]:setCursor("PointingHand")
     tabData.tabs[keyword]:setFontSize(getFontSize())
     tabData.tabs[keyword]:echo("<center>"..label)
     
@@ -99,7 +107,7 @@ end
 
 function lotj.layout.selectTab(tabData, tabName)
   tabData.tabs[tabData.selectedTab]:setStyleSheet(inactiveTabStyle)
-  tabData.tabs[tabData.selectedTab]:setBold(false)
+  -- tabData.tabs[tabData.selectedTab]:setBold(false)
   tabData.selectedTab = tabName
 
   for _, contents in pairs(tabData.contents) do
@@ -107,7 +115,7 @@ function lotj.layout.selectTab(tabData, tabName)
   end
 
   lotj.layout.markTabRead(tabData, tabName)
-  tabData.tabs[tabName]:setBold(true)
+  -- tabData.tabs[tabName]:setBold(true)
   tabData.contents[tabName]:show()
   if tabName == "settings" then lotj.configWindow:show() end
 end
@@ -224,12 +232,12 @@ function lotj.layout.setup()
 
   for _, tab in pairs(lotj.layout.upperRightTabData.tabs) do
     tab:setStyleSheet(inactiveTabStyle)
-    tab:setBold(false)
+    -- tab:setBold(false)
   end
 
   for _, tab in pairs(lotj.layout.lowerRightTabData.tabs) do
     tab:setStyleSheet(inactiveTabStyle)
-    tab:setBold(false)
+    -- tab:setBold(false)
   end
 
   -- Lower info panel, for prompt hp/move gauges and other basic status
