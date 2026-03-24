@@ -3,6 +3,7 @@
 debugc("lotj-ui -> setup.lua")
 
 lotj = lotj or {}
+lotj.settings = lotj.settings or {}
 lotj.setup = lotj.setup or {}
 lotj.setup.eventHandlerKillIds = lotj.setup.eventHandlerKillIds or {}
 lotj.setup.gmcpEventHandlerFuncs = lotj.setup.gmcpEventHandlerFuncs or {}
@@ -49,7 +50,7 @@ end
 local DKJSON_PATH = getMudletHomeDir() .. "/dkjson.lua"
 local DKJSON_URL  = "https://raw.githubusercontent.com/LuaDist/dkjson/refs/heads/master/dkjson.lua"
 
-function doSetup()
+local function doSetup()
   -- No setup can be done without default settings being loaded
   lotj.settings.setup()
 

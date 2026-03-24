@@ -13,7 +13,7 @@ elseif lotj.autoResearch.enabled then
     return
   end
   lotj.autoResearch.log("Don't forget to 'bot start' if you won't be monitoring your screen as this runs.")
-  expandAlias("autoresearch continue", false)
+  lotj.autoResearch.command("continue")
 else
   lotj.autoResearch.log("Type 'autoresearch start' to start researching all skills below 90%.", true)
 end

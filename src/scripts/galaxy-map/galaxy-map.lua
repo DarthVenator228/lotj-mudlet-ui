@@ -61,6 +61,14 @@ local rightClickMenuConfig = {
   ]]
 }
 
+function lotj.galaxyMap.refresh()
+  lotj.galaxyMap.resetData()
+
+  enableTrigger("galaxy-map-refresh")
+  send("starsystems map", false)
+  send("planets", false)
+end
+
 function lotj.galaxyMap.setup()
   lotj.galaxyMap.container = Geyser.Label:new({
     name = "galaxy",
@@ -85,7 +93,7 @@ function lotj.galaxyMap.setup()
   ]])
   lotj.galaxyMap.refreshButton:echo("Click here to populate this map.", "white", "c14")
   lotj.galaxyMap.refreshButton:setClickCallback(function()
-    expandAlias("gmap refresh", false)
+    lotj.galaxyMap.refresh()
   end)
 
   -- Add button for manually adding systems
@@ -108,7 +116,7 @@ function lotj.galaxyMap.setup()
     }
   ]])
   lotj.galaxyMap.addButton:echo("+", "white", "c20")
-  lotj.galaxyMap.addButton:setClickCallback("lotj.galaxyMap.showAddSystemDialog")
+  lotj.galaxyMap.addButton:setClickCallback(lotj.galaxyMap.showAddSystemDialog)
 
   disableTrigger("galaxy-map-refresh")
   if io.exists(dataFileName) then
@@ -165,6 +173,7 @@ function lotj.galaxyMap.enqueuePendingRefreshCommands()
   if gatherPlanetsState.pendingCommands == 0 then
     disableTrigger("galaxy-map-refresh")
     gatherPlanetsState.currentPlanet = nil
+    lotj.galaxyMap.drawSystems()
     return
   end
 
@@ -206,7 +215,7 @@ function lotj.galaxyMap.recordSystem(name, x, y, manual)
   }
   table.save(dataFileName, lotj.galaxyMap.data)
 
-  lotj.galaxyMap.drawSystems()
+  -- lotj.galaxyMap.drawSystems()
 end
 
 -- Add a manual system with user-friendly feedback
@@ -234,6 +243,7 @@ function lotj.galaxyMap.addManualSystem(name, x, y)
   end
 
   lotj.galaxyMap.recordSystem(name, x, y, true)
+  lotj.galaxyMap.drawSystems()
   lotj.galaxyMap.log("<green>Added manual system '"..name.."' at ("..x..", "..y..")")
 
   return true
@@ -277,6 +287,7 @@ function lotj.galaxyMap.showAddSystemDialog()
     background-color: rgba(0, 0, 0, 150);
   ]])
   lotj.galaxyMap.addDialogOverlay:raise()
+  lotj.galaxyMap.addDialogOverlay:setClickCallback(lotj.galaxyMap.closeAddSystemDialog)
 
   -- Create dialog box
   local dialogWidth = 400
@@ -376,7 +387,7 @@ function lotj.galaxyMap.showAddSystemDialog()
     border-radius: 3px;
   ]])
   cancelButton:echo("<center><b>Cancel</b></center>", "white", "c14")
-  cancelButton:setClickCallback("lotj.galaxyMap.closeAddSystemDialog")
+  cancelButton:setClickCallback(lotj.galaxyMap.closeAddSystemDialog)
 
   -- Add System button
   local addButton = Geyser.Label:new({
@@ -395,7 +406,7 @@ function lotj.galaxyMap.showAddSystemDialog()
     }
   ]])
   addButton:echo("<center><b>Add System</b></center>", "white", "c14")
-  addButton:setClickCallback("lotj.galaxyMap.handleAddSystemSubmit")
+  addButton:setClickCallback(lotj.galaxyMap.handleAddSystemSubmit)
   lotj.galaxyMap.addDialog:raiseAll()
 end
 
@@ -520,7 +531,7 @@ function lotj.galaxyMap.recordPlanet(planetData)
 
   table.save(dataFileName, lotj.galaxyMap.data)
 
-  lotj.galaxyMap.drawSystems()
+  -- lotj.galaxyMap.drawSystems()
 end
 
 local systemPointSize = 32  -- Size of planet images
@@ -606,7 +617,7 @@ end
 function lotj.galaxyMap.drawSystems()
   local minX, _, _, maxY = lotj.galaxyMap.coordRange()
   local xOffset, yOffset, pxPerCoord, pxPerCoordX = lotj.galaxyMap.calculateSizing()
-  
+
   lotj.galaxyMap.systemPoints = lotj.galaxyMap.systemPoints or {}
   for _, point in pairs(lotj.galaxyMap.systemPoints) do
     point:hide()
@@ -617,7 +628,6 @@ function lotj.galaxyMap.drawSystems()
     label:hide()
   end
 
-  
   local foundCurrentLocation = false
   local systemsToDraw = {}
   for _, system in pairs(lotj.galaxyMap.data.systems) do
@@ -640,7 +650,7 @@ function lotj.galaxyMap.drawSystems()
   else
     lotj.galaxyMap.refreshButton:show()
   end
-  
+
   -- Initialize planet image assignments if needed
   lotj.galaxyMap.planetImages = lotj.galaxyMap.planetImages or {}
 
@@ -676,7 +686,7 @@ function lotj.galaxyMap.drawSystems()
 
     local point = lotj.galaxyMap.systemPoints[system.name]
     if point == nil then
-      point = Geyser.Label:new({width=pointSize, height=pointSize}, container())
+      point = Geyser.Label:new({name="galaxyMap_"..system.name, width=pointSize, height=pointSize}, container())
       stylePoint(point, system.gov, false, planetImage, pointSize)
       lotj.galaxyMap.systemPoints[system.name] = point
     else

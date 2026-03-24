@@ -26,7 +26,7 @@ local controlButtonStyle = [[
     }
 ]]
 
-function generateRadarImage(path, size)
+local function generateRadarImage(path, size)
   size = size or 256
   local radius = size / 2
   local cx, cy = radius, radius
@@ -158,7 +158,8 @@ function lotj.systemMap.setup()
   refreshButton:echo("Radar", "white", "12c")
   refreshButton:setClickCallback(function()
     lotj.systemMap.maskNextRadarOutput = true
-    expandAlias("radar", false)
+    enableTrigger("system-map-radar")
+    send("radar", false)
   end)
 
 

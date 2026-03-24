@@ -486,13 +486,13 @@ function ModernConfigManager:createSlider(item, parent, height)
   }, parent)
   decBtn:echo("−")
   decBtn:setStyleSheet(self:getButtonStyle())
-  decBtn:setClickCallback(function() 
+  decBtn:setClickCallback(function()
     local currentVal = self:getItemValue(item)
     local newVal = math.max(item.min, currentVal - item.step)
     self:setItemValue(item, newVal)
     self:refreshSlider(item, valueLabel)
   end)
-  
+
   -- Increase button
   local incBtn = Geyser.Label:new({
     name = "inc_" .. item.key .. "_" .. uniqueName,
@@ -732,14 +732,14 @@ end
 function ModernConfigManager:toggleItem(item, toggleWidget, height)
   local currentState = self:getItemValue(item)
   local newState = not currentState
-  
+
   self:setItemValue(item, newState)
-  
+
   -- Update the toggle appearance
   local bgColor = newState and self.style.colors.toggleOn or self.style.colors.toggleOff
   local hoverColor = newState and self.style.colors.selected or self.style.colors.hover
   local text = newState and "ON" or "OFF"
-  
+
   toggleWidget:setStyleSheet([[
     QLabel {
       background: ]] .. bgColor .. [[;
@@ -754,7 +754,7 @@ function ModernConfigManager:toggleItem(item, toggleWidget, height)
     }
   ]])
   toggleWidget:setFont(getFont())
-  
+
   toggleWidget:echo(text)
 end
 
@@ -837,10 +837,13 @@ function ModernConfigManager:createBottomButtons()
     {name = "🔄 Reset", callback = function() self:resetToDefaults() end, style = "primary", x = "37.5%", width = "25%"},
     {name = "❌ Close", callback = function() self:hide() end, style = "danger", x = "65%", width = "25%"}
   }
-  
+
+  local close_button_idx = 3
   -- Include Load button only if onLoad callback is provided
   if self.configDef.onLoad then
     table.insert(defaultButtons, 2, {name = "📁 Load", callback = function() self.configDef.onLoad(self.configTable) self:refresh() end, style = "primary", x = "28.75%", width = "18.75%"})
+    -- Adjust close button location
+    close_button_idx = close_button_idx + 1
     -- Adjust other button positions
     defaultButtons[1].x =  "8.75%"
     defaultButtons[1].width = "18.75%"
@@ -851,7 +854,13 @@ function ModernConfigManager:createBottomButtons()
     defaultButtons[4].x = "68.75%"
     defaultButtons[4].width = "25%"
   end
-  
+
+  if self.configDef.overrideClose then
+    defaultButtons[close_button_idx].name = "Reload Profile"
+    defaultButtons[close_button_idx].callback = function()
+      resetProfile()
+    end
+  end
   -- Use custom buttons if provided, otherwise use defaults
   local buttons = #buttonsConfig > 0 and buttonsConfig or defaultButtons
   
@@ -893,7 +902,11 @@ function ModernConfigManager:resetToDefaults()
     if category.items then
       for _, item in ipairs(category.items) do
         if item.key and item.default ~= nil then
-          self.configTable[item.key] = item.default
+          if item.type == "toggle" then
+            self:setItemValue(item, item.default)
+          else
+            self.configTable[item.key] = item.default
+          end
         end
       end
     end
@@ -952,10 +965,10 @@ function ModernConfigManager:show()
   if not self.container then
     self:create()
   end
-  tempTimer(0, 
+  tempTimer(0,
     function() 
-      self.container:show() 
-      self.container:raise() 
+      self.container:show()
+      self.container:raise()
     end
   )
 end

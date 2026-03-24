@@ -3,19 +3,19 @@
     "name": "local",
     "patterns": [
       {
-        "pattern": "^.+ (?:says|asks|exclaims|whispers|radios)[,. ]*'.*'$",
+        "pattern": "^You (?:(?<adverb>\\w+) )?(?<speak>say|whisper|exclaim|ask|yell|radio)(?: to (?<target>.+))?(?:, in (?<language>[a-zA-Z']+))?(?: '(?<text>.+)')$",
         "type": "regex"
       },
       {
-        "pattern": "^'.*' .+ (?:says|asks|exclaims|radios)[,. ]*.$",
+        "pattern": "^(?:'(?<text>.+)') you (?:(?<adverb>\\w+) )?(?<speak>say|whisper|exclaim|ask|yell|radio)(?: to (?<target>.+?))?(?:, in (?<language>[a-zA-Z']+))?\\.$",
         "type": "regex"
       },
       {
-        "pattern": "^You( .+)? (?:say|ask|exclaim|whisper|radio)[,. ]*'.*'$",
+        "pattern": "^\"?(?<target>.+?)\"? (?:(?<adverb>\\w+) )?(?<speak>says|whispers|exclaims|asks|yells|radios)(?: to you)?(?:, in (?<language>[a-zA-Z']+))?(?: '(?<text>.+)')$",
         "type": "regex"
       },
       {
-        "pattern": "^'.*' you( .+)? (?:say|ask|exclaim|radio)[,. ]*.$",
+        "pattern": "^(?:'(?<text>.+)') (?<target>.+?) (?:(?<adverb>\\w+) )?(?<speak>says|whispers|exclaims|asks|yells|radios)(?: to you)?(?:, in (?<language>[a-zA-Z']+))?\\.$",
         "type": "regex"
       },
       {

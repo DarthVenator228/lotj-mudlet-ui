@@ -36,7 +36,7 @@ local primaryConfigDefinition = {
     {
       name = "Gag Options",
       items = {
-        -- {
+        -- { -- To be integrated
         --   name = "Study",
         --   key = "gag_study",
         --   type = "toggle",
@@ -59,6 +59,77 @@ local primaryConfigDefinition = {
           default = false,
           description = "Gag blank lines coming from the MUD",
           icon = "❌"
+        },
+      }
+    },
+    {
+      name = "Keybinds",
+      items = {
+        {
+          name = "Numpad movement",
+          key = "numpad_movement",
+          type = "toggle",
+          default = false,
+          description = "Enable/disable numpad cardinal movement keybinds",
+          icon = "🔢",
+          onChange = function(value, key)
+            if value then enableKey("lotj-ui_move") else disableKey("lotj-ui_move") end
+          end
+        },
+        {
+          name = "Numpad Map Shift",
+          key = "numpad_map_shift",
+          type = "toggle",
+          default = false,
+          description = "Enable/disable map shift numpad keybinds (alt+numpad)",
+          icon = "🗺️",
+          onChange = function(value, key)
+            if value then enableKey("lotj-ui_map-shift") else disableKey("lotj-ui_map-shift") end
+          end
+        },
+        {
+          name = "Numpad Scanning",
+          key = "numpad_scanning",
+          type = "toggle",
+          default = false,
+          description = "Enable/disable scanning with ctrl+numpad",
+          icon = "🔭",
+          onChange = function(value, key)
+            if value then enableKey("lotj-ui_scan") else disableKey("lotj-ui_scan") end
+          end
+        },
+        {
+          name = "Retreat (Linux)",
+          key = "numpad_retreat_linux",
+          type = "toggle",
+          default = false,
+          description = "Enable/disable retreat with shift+numpad",
+          icon = "💨",
+          onChange = function(value, key)
+            if value then enableKey("lotj-ui_retreat-linux") else disableKey("lotj-ui_retreat-linux") end
+          end
+        },
+        {
+          name = "Retreat (Windows)",
+          key = "numpad_retreat_windows",
+          type = "toggle",
+          default = false,
+          description = "Enable/disable retreat with shift+numpad",
+          icon = "💨",
+          onChange = function(value, key)
+            if value then enableKey("lotj-ui_retreat-windows") else disableKey("lotj-ui_retreat-windows") end
+          end
+        },
+        {
+          name = "Chat Tab Selecting",
+          key = "chat-tab_selecting",
+          type = "toggle",
+          default = true,
+          description = "Enable/disable tabbing between chat tabs with alt+# (# being tab number)",
+          icon = "👆",
+          onChange = function(value, key)
+            if value then enableKey("lotj-ui_chat-tab") else disableKey("lotj-ui_chat-tab") end
+          end
         },
       }
     },
@@ -155,14 +226,17 @@ local primaryConfigDefinition = {
           description = "Enable debug logging and verbose output - Reload the profile for all features to take effect",
           icon = "🐛"
         },
-        -- {
-        --   name = "Test Input String",
-        --   key = "testInputString",
+        -- { -- Maybe one day if Mudlet adds a setCommandSeparator function 
+        --   name = "Command Line Separator",
+        --   key = "command_line_separator",
         --   type = "input",
-        --   default = "default",
-        --   descripiton = "",
-        --   icon = "🐞",
-        --   inputType = "text"
+        --   default = getCommandSeparator(),
+        --   descripiton = "Change your default command line separator - put this string inside one command to send it as two",
+        --   icon = ">_",
+        --   inputType = "text",
+        --   onChange = function(value, key)
+        --     setCommandSeparator(value)
+        --   end
         -- },
         -- {
         --   name = "Test Input Number",
@@ -204,43 +278,50 @@ local primaryConfigDefinition = {
     -- You could save to file here, update other systems, etc.
   end,
 
-  onSave = function(configTable)
+  onSave = function(self, configTable)
     configTable = copyTableWithoutFunctions(configTable)
     lotj.chat.debugLog("Saving configuration...")
     -- Example: save to JSON file
     local json = require("dkjson")
-    local file = io.open(getMudletHomeDir() .. "/settings.json", "w")
+    local file = io.open(settingsFile, "w")
     if file then
----@diagnostic disable-next-line: param-type-mismatch
       file:write(json.encode(configTable))
       file:close()
       lotj.chat.debugLog("Configuration saved!")
     end
   end,
 
-  onLoad = function(configTable)
+  onLoad = function(self, configTable)
     lotj.chat.debugLog("Loading configuration...")
     -- Example: load from JSON file
     local json = require("dkjson")
-    local file = io.open(getMudletHomeDir() .. "/settings.json", "r")
+    local file = io.open(settingsFile, "r")
+    if file == nil then
+      self:onSave(configTable)
+      file = io.open(settingsFile, "r")
+    end
     if file then
       local content = file:read("*all")
       file:close()
       local loaded = json.decode(content)
       if loaded then
----@diagnostic disable-next-line: param-type-mismatch
         for k, v in pairs(loaded) do
           configTable[k] = v
         end
         lotj.chat.debugLog("Configuration loaded!")
+        for _, c in ipairs(lotj.configWindow.configDef.categories) do
+          for _, j in ipairs(c.items) do
+            if j.type == "toggle" then
+              lotj.configWindow:setItemValue(j, configTable[j.key])
+            end
+          end
+        end
       end
     end
-  end
-}
+  end,
 
-function lotj.settings.setup()
-  primaryConfigDefinition.onLoad(lotj.settings)
-end
+  overrideClose = true
+}
 
 local mainStyle = {
   window = {
@@ -278,12 +359,16 @@ local secondaryStyle = {
   }
 }
 
-function lotj.settings.setupTab()
-  -- lotj.chat["settings"]:setStyleSheet("background-color: rgba(0,0,0,100%)")
-
+function lotj.settings.setup()
   lotj.configWindow = {}
   lotj.configWindow = ModernConfigManager:new(primaryConfigDefinition, { style = mainStyle })
 
+  primaryConfigDefinition:onLoad(lotj.settings)
+  -- primaryConfigDefinition.onSave(lotj.settings)
+  -- primaryConfigDefinition.onLoad(lotj.settings) -- Super hacky I know
+end
+
+function lotj.settings.setupTab()
   lotj.configWindow:create(lotj.chat["settings"])
   lotj.configWindow.container:lockContainer("full")
 end

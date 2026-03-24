@@ -33,7 +33,7 @@ local subcommands = {{
     end
     
     table.remove(lotj.autoResearch.researchList, 1)
-    expandAlias("autoresearch continue", false)
+    lotj.autoResearch.command("continue")
   end,
   helpText = "Resume researching the first skill in the current autoresearch list."
 },{
