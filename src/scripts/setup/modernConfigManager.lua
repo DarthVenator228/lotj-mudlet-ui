@@ -833,7 +833,7 @@ function ModernConfigManager:createBottomButtons()
   
   local buttonsConfig = self.configDef.buttons or {}
   local defaultButtons = {
-    {name = "💾 Save", callback = self.configDef.onSave and function() self.configDef.onSave(self.configTable) end, style = "primary", x = "10%", width = "25%"},
+    {name = "💾 Save", callback = self.configDef.onSave and function() self.configDef:onSave(self.configTable) end, style = "primary", x = "10%", width = "25%"},
     {name = "🔄 Reset", callback = function() self:resetToDefaults() end, style = "primary", x = "37.5%", width = "25%"},
     {name = "❌ Close", callback = function() self:hide() end, style = "danger", x = "65%", width = "25%"}
   }
@@ -841,7 +841,7 @@ function ModernConfigManager:createBottomButtons()
   local close_button_idx = 3
   -- Include Load button only if onLoad callback is provided
   if self.configDef.onLoad then
-    table.insert(defaultButtons, 2, {name = "📁 Load", callback = function() self.configDef.onLoad(self.configTable) self:refresh() end, style = "primary", x = "28.75%", width = "18.75%"})
+    table.insert(defaultButtons, 2, {name = "📁 Load", callback = function() self.configDef:onLoad(self.configTable) self:refresh() end, style = "primary", x = "28.75%", width = "18.75%"})
     -- Adjust close button location
     close_button_idx = close_button_idx + 1
     -- Adjust other button positions

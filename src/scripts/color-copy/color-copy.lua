@@ -27,7 +27,7 @@ end
 
 addMouseEvent("Copy with colors", "onCopyWithColors")
 
-function onCopyWithColors(event, menu, window, startCol, startRow, endCol, endRow)
+local function onCopyWithColors(event, menu, window, startCol, startRow, endCol, endRow)
   if startCol == endCol and startRow == endRow then return end
   local parsed = ""
   local lastColor = nil
@@ -55,4 +55,4 @@ function onCopyWithColors(event, menu, window, startCol, startRow, endCol, endRo
   setClipboardText(parsed)
 end
 
-registerAnonymousEventHandler("onCopyWithColors", "onCopyWithColors")
+registerAnonymousEventHandler("onCopyWithColors", onCopyWithColors)
