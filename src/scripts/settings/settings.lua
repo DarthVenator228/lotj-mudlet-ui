@@ -216,6 +216,34 @@ local primaryConfigDefinition = {
       }
     },
     {
+      name = "GUI Preferences",
+      items = {
+        {
+          name = "Startup Map",
+          key = "startup_map",
+          type = "dropdown",
+          -- options = lotj.layout.getTabNames(lotj.layout.upperRightTabData),
+          options = {"map", "system", "galaxy"},
+          default = "map",
+          description = "Select which upper right window tab to display on startup",
+          icon = "⏻",
+          onChange = function(value)
+            lotj.layout.selectTab(lotj.layout.upperRightTabData, value)
+          end
+        },
+        {
+          name = "Startup Chat",
+          key = "startup_chat",
+          type = "dropdown",
+          -- options = lotj.layout.getTabNames(lotj.layout.lowerRightTabData),
+          options = {"all", "local", "commnet", "clan", "broadcast", "ooc", "tell", "imm", "settings"},
+          default = "all",
+          description = "Select which lower right chat tab to display on startup",
+          icon = "⏻"
+        }
+      }
+    },
+    {
       name = "Advanced Options",
       items = {
         {
@@ -282,7 +310,8 @@ local primaryConfigDefinition = {
     configTable = copyTableWithoutFunctions(configTable)
     lotj.chat.debugLog("Saving configuration...")
     -- Example: save to JSON file
-    local json = require("dkjson")
+    -- local json = require("dkjson")
+    local json = require("@PKGNAME@.dkjson")
     local file = io.open(settingsFile, "w")
     if file then
       file:write(json.encode(configTable))
@@ -294,7 +323,8 @@ local primaryConfigDefinition = {
   onLoad = function(self, configTable)
     lotj.chat.debugLog("Loading configuration...")
     -- Example: load from JSON file
-    local json = require("dkjson")
+    -- local json = require("dkjson")
+    local json = require("@PKGNAME@.dkjson")
     local file = io.open(settingsFile, "r")
     if file == nil then
       self:onSave(configTable)

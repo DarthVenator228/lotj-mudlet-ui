@@ -106,7 +106,10 @@ function lotj.layout.createTabbedPanel(tabData, container, tabList)
 end
 
 function lotj.layout.selectTab(tabData, tabName)
-  tabData.tabs[tabData.selectedTab]:setStyleSheet(inactiveTabStyle)
+  if not tabData.tabs[tabName] then debugc("No such tab"); return end
+  if tabData.selectedTab then
+    tabData.tabs[tabData.selectedTab]:setStyleSheet(inactiveTabStyle)
+  end
   -- tabData.tabs[tabData.selectedTab]:setBold(false)
   tabData.selectedTab = tabName
 
@@ -211,6 +214,7 @@ function lotj.layout.setup()
   -- Here we check if any compatible modules need to be loaded into the UI
   -- This could certainly be fortified, but for now just hope mods exists
   if lotj_mods then
+    debugc("Mods found")
     for k, _ in pairs(lotj_mods) do
       if lotj_mods[k].location == "upper" then
         table.insert(lotj.layout.upperRightTabData.tabList, lotj_mods[k].newTab)
