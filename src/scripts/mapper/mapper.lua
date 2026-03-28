@@ -616,7 +616,7 @@ function lotj.mapper.onEnterRoom()
   -- we may not be on a planet
   else
     -- if our previous room was not a ship room
-    if not lotj.mapper.last.ship then
+    if lotj.mapper.last and not lotj.mapper.last.ship then
       lotj.mapper.log("You've left your last known area, mapper stopped.")
       lotj.mapper.stopMapping()
     end
