@@ -1,5 +1,15 @@
 [
   {
+    "name": "enter-ship",
+    "patterns": [
+      {
+        "pattern": "^You enter .+ '(?<ship_name>.+)'\\.$",
+        "type": "regex"
+      }
+    ],
+    "script": "lotj.mapper.setCurrentShipName(matches.ship_name)"
+  },
+  {
     "name": "room-amenities",
     "patterns": [
       {
