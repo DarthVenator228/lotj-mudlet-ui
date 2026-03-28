@@ -626,6 +626,7 @@ function lotj.mapper.onEnterRoom()
 end
 
 function lotj.mapper.onEnterShipRoom()
+  if not gmcp.Room.Info.vnum then return end
   -- if false we're still on a planet
   if lotj.mapper.current.planet then return end
 
