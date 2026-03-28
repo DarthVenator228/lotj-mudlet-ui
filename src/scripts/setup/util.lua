@@ -21,6 +21,10 @@ function splitargs(args)
   return retval
 end
 
+function eval(anything)
+  if anything then return true else return false end
+end
+
 function gmcpVarByPath(varPath)
   local temp = gmcp
   for varStep in varPath:gmatch("([^\\.]+)") do

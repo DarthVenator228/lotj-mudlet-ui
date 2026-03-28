@@ -235,7 +235,7 @@ function lotj.mapper.startMapping(areaName)
   else
     lotj.mapper.log("Mapping in existing area <yellow>"..areaName.."<reset>.")
   end
-  
+
   lotj.mapper.mappingArea = areaName
   lotj.mapper.lastMoveDirs = {}
   lotj.mapper.processCurrentRoom()
@@ -243,13 +243,10 @@ end
 
 
 function lotj.mapper.stopMapping()
-  if lotj.mapper.mappingArea == nil then
-    lotj.mapper.logError("Mapper not running.")
-    return
-  end
   lotj.mapper.mappingArea = nil
   lotj.mapper.lastMoveDirs = nil
-  lotj.mapper.log("Mapping <red>stopped<reset>. Don't forget to <yellow>map save<reset>!")
+  lotj.mapper.saveMap()
+  lotj.mapper.log("Mapping <red>stopped<reset>.<reset>")
 end
 
 
@@ -311,13 +308,13 @@ function lotj.mapper.setRoomCoords(areaName)
     lotj.mapper.logError("This command only works for imm characters.")
     return
   end
-  
+
   local areaId = getAreaTable()[areaName]
   if not areaId then
     lotj.mapper.logError("Area not found by name "..areaName)
     return
   end
-  
+
   ---@diagnostic disable-next-line: param-type-mismatch
   for _, roomId in ipairs(getAreaRooms(areaId)) do
     local x, y, z = getRoomCoordinates(roomId)
@@ -360,6 +357,7 @@ function lotj.mapper.setup()
 
   lotj.setup.registerEventHandler("sysDataSendRequest", lotj.mapper.handleSentCommand)
   lotj.setup.registerEventHandler("gmcp.Room.Info", lotj.mapper.onEnterRoom)
+  lotj.setup.registerEventHandler("gmcp.Ship.Info", lotj.mapper.onEnterShipRoom)
 end
 
 function lotj.mapper.teardown()
@@ -591,6 +589,7 @@ function lotj.mapper.onEnterRoom()
     name = gmcp.Room.Info.name:gsub("&.", ""),
     exits = gmcp.Room.Info.exits or {},
     planet = gmcp.Room.Info.planet,
+    ship = false
   }
 
   -- This room has coordinates set in the game which we should use.
@@ -603,6 +602,10 @@ function lotj.mapper.onEnterRoom()
   -- If the new room has has a planet different than the last one and we don't have
   -- an area for that planet yet, give a prompt about how to start mapping it.
   if lotj.mapper.current.planet then
+    -- if coming off a ship
+    if lotj.mapper.last.ship then
+      lotj.mapper.stopMapping()
+    end
     if lotj.mapper.last and lotj.mapper.last.planet ~= lotj.mapper.current.planet then
       if getAreaTable()[lotj.mapper.current.planet] == nil then
         lotj.mapper.log("Welcome to <yellow>"..lotj.mapper.current.planet.."<reset>. "..
@@ -610,9 +613,27 @@ function lotj.mapper.onEnterRoom()
         echo("\n")
       end
     end
+  -- we may not be on a planet
+  else
+    -- if our previous room was not a ship room
+    if not lotj.mapper.last.ship then
+      lotj.mapper.log("You've left your last known area, mapper stopped.")
+      lotj.mapper.stopMapping()
+    end
   end
-  
+
   lotj.mapper.processCurrentRoom()
+end
+
+function lotj.mapper.onEnterShipRoom()
+  -- if false we're still on a planet
+  if lotj.mapper.current.planet then return end
+
+  lotj.mapper.current.ship = true
+    -- if true we just entered a ship
+    if lotj.mapper.last and lotj.mapper.last.ship == false and lotj.mapper.current.ship then
+      lotj.mapper.log("To begin mapping this ship: map start <yellow><ship name><reset>")
+    end
 end
 
 
