@@ -389,6 +389,8 @@ function ModernConfigManager:createConfigItem(item, yPos, itemHeight)
   -- Control based on type
   if item.type == "toggle" then
     self:createToggle(item, itemContainer, itemHeight)
+  elseif item.type == "button" then
+    self:createButton(item, itemContainer, itemHeight)
   elseif item.type == "slider" then
     self:createSlider(item, itemContainer, itemHeight)
   elseif item.type == "dropdown" then
@@ -419,6 +421,35 @@ end
 -- ============================================================================
 -- CONTROL CREATORS
 -- ============================================================================
+
+function ModernConfigManager:createButton(item, parent, height)
+  local uniqueName = self.configDef.name
+  local button = Geyser.Label:new({
+    name = "button_" .. item.key .. '_' .. uniqueName,
+    x = "70%", y = 2,
+    width = "25%", height = height + 5
+  }, parent)
+
+  button:setStyleSheet([[
+    QLabel {
+      background: ]] .. self.style.colors.toggleOff .. [[;
+      border: 2px solid ]] .. self.style.colors.border .. [[;
+      border-radius: ]] .. (height/2) .. [[px;
+      color: ]] .. self.style.colors.text .. [[;
+      font-weight: bold;
+      qproperty-alignment: 'AlignCenter';
+    }
+    QLabel:hover {
+      background: ]] .. self.style.colors.hover .. [[;
+    }
+  ]])
+  button:setFont(getFont())
+  button:echo("Activate")
+
+  if item.description then button:setToolTip(item.description) end
+  button:setClickCallback(function() self:setItemValue(item, true) end)
+  -- button:setClickCallback(item.func, item.args)
+end
 
 function ModernConfigManager:createToggle(item, parent, height)
   local uniqueName = self.configDef.name
@@ -518,6 +549,10 @@ function ModernConfigManager:createDropdown(item, parent, height)
   if not item.options or #item.options == 0 then
     item.options = {"Option 1", "Option 2"}
   end
+
+  if item.update and type(item.update) == "function" then
+    item.options = item.update()
+  end
   
   -- Find current option index
   for i, option in ipairs(item.options) do
@@ -549,6 +584,7 @@ function ModernConfigManager:createDropdown(item, parent, height)
   dropdown:setFont(getFont())
   
   dropdown:setClickCallback(function()
+
     local nextIndex = (currentIndex % #item.options) + 1
     local nextValue = item.options[nextIndex]
     self:setItemValue(item, nextValue)
@@ -683,7 +719,7 @@ function ModernConfigManager:createPopup(item, parent, height)
     }
   ]])
   popup:setFont(getFont())
-  popup:echo("OPEN")
+  popup:echo("Open")
 
   popup:setClickCallback(function()
     print(popup.name .. " pressed.")
@@ -716,12 +752,17 @@ end
 function ModernConfigManager:setItemValue(item, value)
   if item.key and self.configTable then
     self.configTable[item.key] = value
-    
+
     -- Call item-specific onChange callback if provided
     if item.onChange and type(item.onChange) == "function" then
       pcall(item.onChange, value, item.key)
     end
-    
+
+    -- Call item-specific interaction callback if provided
+    if item.func and type(item.func) == "function" then
+      pcall(item.func, item.args)
+    end
+
     -- Call global onChange callback if provided
     if self.configDef.onChange and type(self.configDef.onChange) == "function" then
       pcall(self.configDef.onChange, item.key, value, self.configTable)

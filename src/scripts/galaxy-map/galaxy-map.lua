@@ -72,7 +72,7 @@ end
 function lotj.galaxyMap.setup()
   lotj.galaxyMap.container = Geyser.Label:new({
     name = "galaxy",
-    x = 0, y = 0,
+    x = "0%", y = "0%",
     width = "100%",
     height = "100%",
   }, lotj.layout.upperRightTabData.contents["galaxy"])
@@ -85,7 +85,7 @@ function lotj.galaxyMap.setup()
   lotj.galaxyMap.refreshButton = Geyser.Label:new({
     name = "galaxyMapRefresh",
     x = "20%", y = "35%",
-    width = "60%", height = 40,
+    width = "60%", height = "20%",
   }, lotj.galaxyMap.container)
   lotj.galaxyMap.refreshButton:setStyleSheet([[
     background-color: grey;
@@ -97,17 +97,17 @@ function lotj.galaxyMap.setup()
   end)
 
   -- Add button for manually adding systems
-  local buttonSize = getFontSize() * 2.7
+  local buttonSize = (getFontSize() * 2.7 / lotj.galaxyMap.container:get_height()) * 100
   lotj.galaxyMap.addButton = Geyser.Label:new({
     name = "galaxyMapAddSystem",
-    x = -buttonSize - 5, y = 5,
-    width = buttonSize, height = buttonSize,
+    x = 99 - buttonSize .. '%', y = "1%",
+    width = buttonSize .. '%', height = buttonSize .. '%',
   }, lotj.galaxyMap.container)
   lotj.galaxyMap.addButton:setStyleSheet([[
     QLabel {
       background-color: rgba(0, 170, 170, 180);
       border: 2px solid #00aaaa;
-      border-radius: ]]..math.floor(buttonSize/2)..[[px;
+      border-radius: ]]..math.floor(lotj.galaxyMap.addButton:get_height()/2)..[[px;
       font-weight: bold;
     }
     QLabel:hover {

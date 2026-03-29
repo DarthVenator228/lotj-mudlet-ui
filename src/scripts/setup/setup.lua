@@ -47,9 +47,6 @@ local function debugClient()
   lotj.chat.debugLog("Client")
 end
 
--- local DKJSON_PATH = getMudletHomeDir() .. "/dkjson.lua"
--- local DKJSON_URL  = "https://raw.githubusercontent.com/LuaDist/dkjson/refs/heads/master/dkjson.lua"
-
 local function doSetup()
   -- No setup can be done without default settings being loaded
   lotj.settings.setup()
@@ -87,25 +84,12 @@ local function doSetup()
 
   debugc("lotj-ui finished")
   raiseEvent("lotjUiLoaded")
+  geyserMapper:show()
   geyserMapper:raise()
+  -- For whatever reason Mudlet throws a fit about showing adjustable 
+  -- containers on startup so put it at the end of the queue
+  tempTimer(0, "lotj.layout.cycle()")
 end
-
--- local function ensureDepsAndSetup()
---   if io.exists(DKJSON_PATH) then
---     doSetup()
---     return
---   end
-
---   -- One-shot handler for dkjson finishing download
---   local killId
---   killId = registerAnonymousEventHandler("sysDownloadDone", function(_, filename)
---     if filename ~= DKJSON_PATH then return end
---     killAnonymousEventHandler(killId)
---     doSetup()
---   end)
-
---   downloadFile(DKJSON_PATH, DKJSON_URL)
--- end
 
 function lotj.setup.teardown()
   for _, killId in ipairs(lotj.setup.eventHandlerKillIds) do
@@ -119,7 +103,6 @@ end
 
 lotj.setup.registerEventHandler("sysLoadEvent", function()
   doSetup()
-  -- ensureDepsAndSetup()
 end)
 
 lotj.setup.registerEventHandler("sysInstallPackage", function(_, pkgName)
@@ -127,11 +110,10 @@ lotj.setup.registerEventHandler("sysInstallPackage", function(_, pkgName)
   if table.contains(getPackages(),"generic_mapper") then
     uninstallPackage("generic_mapper")
   end
-  
+
   if pkgName ~= "lotj-ui" then return end
   sendGMCP("Core.Supports.Set", "[\"Ship 1\"]")
   doSetup()
-  -- ensureDepsAndSetup()
 end)
 
 lotj.setup.registerEventHandler("sysUninstallPackage", function(_, pkgName)

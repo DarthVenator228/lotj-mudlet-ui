@@ -35,7 +35,7 @@ local subcommands = {{
     table.remove(lotj.autoResearch.researchList, 1)
     lotj.autoResearch.command("continue")
   end,
-  helpText = "Resume researching the first skill in the current autoresearch list."
+  helpText = "Skip to the next skill in the autoresearch list and begin researching it."
 },{
   args = {"continue"},
   action = function()
@@ -49,7 +49,7 @@ local subcommands = {{
     lotj.autoResearch.log(current.."/"..lotj.autoResearch.initialCount..": Researching "..lotj.autoResearch.researchList[1].."...")
     send("research "..lotj.autoResearch.researchList[1], false)
   end,
-  helpText = "Skip to the next skill in the autoresearch list and begin researching it."
+  helpText = "Resume researching the first skill in the current autoresearch list."
 },{
   args = {"stop"},
   action = function()
