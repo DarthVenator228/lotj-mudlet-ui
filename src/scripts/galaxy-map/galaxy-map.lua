@@ -138,6 +138,7 @@ end
 
 function lotj.galaxyMap.setShipGalCoords()
   if not gmcp.Ship then return end
+  if not gmcp.Ship.System then return end
   if gmcp.Ship.System.x ~= nil and gmcp.Ship.System.y ~= nil then
     lotj.galaxyMap.currentX = gmcp.Ship.System.x
     lotj.galaxyMap.currentY = gmcp.Ship.System.y
