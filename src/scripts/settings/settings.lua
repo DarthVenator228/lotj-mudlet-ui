@@ -222,7 +222,6 @@ local primaryConfigDefinition = {
           name = "Startup Map",
           key = "startup_map",
           type = "dropdown",
-          -- options = lotj.layout.getTabNames(lotj.layout.upperRightTabData),
           options = {"map", "system", "galaxy"},
           update = function() return lotj.layout.getTabNames(lotj.layout.upperRightTabData) end,
           default = "map",
@@ -237,20 +236,10 @@ local primaryConfigDefinition = {
           key = "startup_chat",
           type = "dropdown",
           options = {"all", "local", "commnet", "clan", "broadcast", "ooc", "tell", "imm", "settings"},
+          update = function() return lotj.layout.getTabNames(lotj.layout.lowerRightTabData) end,
           default = "all",
           description = "Select which lower right chat tab to display on startup",
           icon = "⏻"
-        },
-        {
-          name = "Unlock Panel",
-          key = "unlock_rightPanel",
-          type = "button",
-          default = true,
-          description = "Show the UI panel borders to allow for moving/resizing",
-          icon = "▶️",
-          func = function()
-            Adjustable.Container.unlockContainer(lotj.layout.rightPanel)
-          end
         }
       }
     },
