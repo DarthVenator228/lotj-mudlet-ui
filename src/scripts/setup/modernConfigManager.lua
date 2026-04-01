@@ -252,7 +252,7 @@ function ModernConfigManager:create(parent)
   -- Create scrollable content area
   self.scrollArea = Geyser.ScrollBox:new({
     name = "configScrollArea_" .. uniqueName,
-    x = 0, y = 0,
+    x = "0%", y = "0%",
     width = "100%",
     height = "85%"
   }, self.container)
@@ -260,7 +260,7 @@ function ModernConfigManager:create(parent)
   -- Create content container inside scroll area
   self.contentContainer = Geyser.Label:new({
     name = "configContent_" .. uniqueName,
-    x = 0, y = 0,
+    x = "0%", y = "0%",
     width = "100%",
     height = "100%"
   }, self.scrollArea)

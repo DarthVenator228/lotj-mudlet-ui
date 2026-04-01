@@ -179,6 +179,7 @@ local function rightPanel_resize(eventName, containerName, width, height, x, y, 
     lotj.layout.upperContainer:resize(nil, newUpperH)
     lotj.layout.lowerContainer:resize(nil, newLowerH)
 
+    lotj.layout.lowerContainer:move(nil, lotj.layout.upperContainer:get_y() + lotj.layout.upperContainer:get_height())
   elseif containerName == lotj.layout.lowerContainer.name then
     local newLowerH = math.max(minH, height)
     local newUpperH = math.max(minH, parentH - newLowerH)
@@ -190,6 +191,8 @@ local function rightPanel_resize(eventName, containerName, width, height, x, y, 
 
     lotj.layout.lowerContainer:resize(nil, newLowerH)
     lotj.layout.upperContainer:resize(nil, newUpperH)
+
+    lotj.layout.lowerContainer:move(nil, lotj.layout.upperContainer:get_y() + lotj.layout.upperContainer:get_height())
   end
 
   lotj.layout.rightPanel_resizing = false
@@ -218,6 +221,13 @@ function lotj.layout.setup()
 
   lotj.layout.containers = {}
 
+  if io.exists(getMudletHomeDir() .. "/AdjustableContainer/lotj.layout.rightPanel.lua") then
+    os.remove(getMudletHomeDir() .. "/AdjustableContainer/lotj.layout.rightPanel.lua")
+  end
+  if io.exists(getMudletHomeDir() .. "/AdjustableContainer/lotj.layout.secondaryPanel.lua") then
+    os.remove(getMudletHomeDir() .. "/AdjustableContainer/lotj.layout.secondaryPanel.lua")
+  end
+
   lotj.layout.rightPanel = Adjustable.Container:new({
     name = "lotj.layout.rightPanel",
     width = rightPanelWidthPct.."%",
@@ -244,6 +254,13 @@ function lotj.layout.setup()
   lotj.setup.registerEventHandler("sysWindowResizeEvent", setSizeOnResize)
   setSizeOnResize()
 
+  if io.exists(getMudletHomeDir() .. "/AdjustableContainer/Maps.lua") then
+    os.remove(getMudletHomeDir() .. "/AdjustableContainer/Maps.lua")
+  end
+  if io.exists(getMudletHomeDir() .. "/AdjustableContainer/ChatHistory.lua") then
+    os.remove(getMudletHomeDir() .. "/AdjustableContainer/ChatHistory.lua")
+  end
+
   -- Upper-right pane, for maps
   lotj.layout.upperContainer = Adjustable.Container:new({
     name = "Maps",
@@ -255,7 +272,7 @@ function lotj.layout.setup()
 
   -- Lower-right panel, for chat history
   lotj.layout.lowerContainer = Adjustable.Container:new({
-    name = "Chat History",
+    name = "ChatHistory",
     x = "0%", y = upperRightHeightPct.."%",
     width = "100%",
     height = (100-upperRightHeightPct).."%",

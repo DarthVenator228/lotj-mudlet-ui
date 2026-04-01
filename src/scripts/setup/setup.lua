@@ -112,7 +112,7 @@ lotj.setup.registerEventHandler("sysInstallPackage", function(_, pkgName)
   end
 
   if pkgName ~= "lotj-ui" then return end
-  sendGMCP("Core.Supports.Set", "[\"Ship 1\"]")
+  sendGMCP("Core.Supports.Set", '["Ship 1"]')
   doSetup()
 end)
 
@@ -123,6 +123,6 @@ end)
 
 lotj.setup.registerEventHandler("sysProtocolEnabled", function(_, protocol)
   if protocol == "GMCP" then
-    sendGMCP("Core.Supports.Set", "[\"Ship 1\"]")
+    sendGMCP("Core.Supports.Set", '["Ship 1"]')
   end
 end)
