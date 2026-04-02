@@ -158,11 +158,11 @@
     "name": "tell",
     "patterns": [
       {
-        "pattern": "^\\(OOC\\) .* tells you '.*'$",
+        "pattern": "\\(OO\\) (?<sender>.+) tells you(?:\\((?<receiver>.+)\\))? '(?<message>.+)'$",
         "type": "regex"
       },
       {
-        "pattern": "^\\(OOC\\) You tell .* '.*'$",
+        "pattern": "^\\(OOC\\) You tell \\(?(?<receiver>.+?)\\)? '(?<message>.+)'$",
         "type": "regex"
       }
     ]

@@ -254,6 +254,22 @@ local primaryConfigDefinition = {
           description = "Enable debug logging and verbose output - Reload the profile for all features to take effect",
           icon = "🐛"
         },
+        {
+          name = "Log Style",
+          key = "logStyle",
+          type = "dropdown",
+          default = "TXT",
+          options = {"TXT", "HTML"},
+          description = "Select which extension to log in",
+          icon = "📁",
+          onChange = function(value)
+            if value == "TXT" then
+              setConfig("logInHTML", false)
+            else
+              setConfig("logInHTML", true)
+            end
+          end
+        }
         -- { -- Maybe one day if Mudlet adds a setCommandSeparator function 
         --   name = "Command Line Separator",
         --   key = "command_line_separator",
@@ -394,11 +410,10 @@ function lotj.settings.setup()
   lotj.configWindow = ModernConfigManager:new(primaryConfigDefinition, { style = mainStyle })
 
   primaryConfigDefinition:onLoad(lotj.settings)
-  -- primaryConfigDefinition.onSave(lotj.settings)
-  -- primaryConfigDefinition.onLoad(lotj.settings) -- Super hacky I know
 end
 
 function lotj.settings.setupTab()
   lotj.configWindow:create(lotj.chat["settings"])
+  -- lotj.configWindow:show()
   lotj.configWindow.container:lockContainer("full")
 end

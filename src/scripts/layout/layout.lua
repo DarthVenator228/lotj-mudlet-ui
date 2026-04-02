@@ -118,7 +118,6 @@ function lotj.layout.selectTab(tabData, tabName)
   if tabData.selectedTab then
     tabData.tabs[tabData.selectedTab]:setStyleSheet(inactiveTabStyle)
   end
-  -- tabData.tabs[tabData.selectedTab]:setBold(false)
   tabData.selectedTab = tabName
 
   for _, contents in pairs(tabData.contents) do
@@ -126,9 +125,8 @@ function lotj.layout.selectTab(tabData, tabName)
   end
 
   lotj.layout.markTabRead(tabData, tabName)
-  -- tabData.tabs[tabName]:setBold(true)
   tabData.contents[tabName]:show()
-  if tabName == "settings" then lotj.configWindow:show() end
+  -- if tabName == "settings" then lotj.configWindow:show() end
 end
 
 function lotj.layout.markTabUnread(tabData, tabName)
