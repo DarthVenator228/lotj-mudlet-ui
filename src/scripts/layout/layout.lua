@@ -57,21 +57,33 @@ local vanish = [[
 function lotj.layout.createTabbedPanel(tabData, container, tabList)
   tabData.tabs = {}
   tabData.contents = {}
-  local p_height = container:get_height()
 
   local tabContainerHeight = getFontSize()*2+4
   local tabContainer = Geyser.HBox:new({
     name = "tabContainer_"..tabData.name,
-    x = "2%", y = "0%",
+    x = "2%", y = 0,
     width = "96%", height = tabContainerHeight,
   }, container)
 
   local contentsContainer = Geyser.Label:new({
     name = "contentsContainer_"..tabData.name,
-    x = "0%", y = ((tabContainerHeight/p_height)*100)..'%',
-    width = "100%", height = 100-((tabContainerHeight/p_height)*100)..'%'
+    x = 0, y = tabContainerHeight,
+    width = "100%",
   }, container)
   contentsContainer:setStyleSheet(vanish)
+
+function lotj.layout.getTabNames(tabData)
+  local t = {}
+  for _, v in ipairs(tabData.tabList) do
+    table.insert(t, v.keyword)
+  end
+  return t
+end
+
+  lotj.layout.resizeTabContents(container, tabContainer, contentsContainer)
+  lotj.setup.registerEventHandler("sysWindowResizeEvent", function()
+    lotj.layout.resizeTabContents(container, tabContainer, contentsContainer)
+  end)
 
   local totalSpace = 0
   for _, tabInfo in ipairs(tabList) do
@@ -81,7 +93,7 @@ function lotj.layout.createTabbedPanel(tabData, container, tabList)
   for _, tabInfo in ipairs(tabList) do
     local keyword = tabInfo.keyword
     local label = tabInfo.label
-
+    
     tabData.tabs[keyword] = Geyser.Label:new({
       name = "lotj.layout.tabData.tabs_"..keyword,
       h_stretch_factor = (#tabInfo.label + 4) / totalSpace,
@@ -90,10 +102,10 @@ function lotj.layout.createTabbedPanel(tabData, container, tabList)
     tabData.tabs[keyword]:setCursor("PointingHand")
     tabData.tabs[keyword]:setFontSize(getFontSize())
     tabData.tabs[keyword]:echo("<center>"..label)
-
+    
     tabData.contents[keyword] = Geyser.Label:new({
       name = "lotj.layout.tabData.contents_"..keyword,
-      x = "0%", y = "0%",
+      x = 0, y = 0,
       width = "100%",
       height = "100%",
     }, contentsContainer)
@@ -106,7 +118,6 @@ function lotj.layout.selectTab(tabData, tabName)
   if tabData.selectedTab then
     tabData.tabs[tabData.selectedTab]:setStyleSheet(inactiveTabStyle)
   end
-  -- tabData.tabs[tabData.selectedTab]:setBold(false)
   tabData.selectedTab = tabName
 
   for _, contents in pairs(tabData.contents) do
@@ -114,9 +125,8 @@ function lotj.layout.selectTab(tabData, tabName)
   end
 
   lotj.layout.markTabRead(tabData, tabName)
-  -- tabData.tabs[tabName]:setBold(true)
   tabData.contents[tabName]:show()
-  if tabName == "settings" then lotj.configWindow:show() end
+  -- if tabName == "settings" then lotj.configWindow:show() end
 end
 
 function lotj.layout.markTabUnread(tabData, tabName)
@@ -140,12 +150,9 @@ function lotj.layout.selectTabNumber(tabData, number)
   lotj.layout.selectTab(tabData, tabData.tabList[number].keyword)
 end
 
-function lotj.layout.getTabNames(tabData)
-  local t = {}
-  for _, v in ipairs(tabData.tabList) do
-    table.insert(t, v.keyword)
-  end
-  return t
+function lotj.layout.resizeTabContents(parentContainer, tabContainer, contentsContainer)
+  local newHeight = parentContainer:get_height()-tabContainer:get_height()
+  contentsContainer:resize(nil, newHeight)
 end
 
 function setSizeOnResize()
@@ -232,25 +239,8 @@ function lotj.layout.setup()
     name = "lotj.layout.rightPanel",
     width = rightPanelWidthPct.."%",
     x = (100-rightPanelWidthPct).."%",
-    y = 0, height = "100%", id = 1
+    y = 0, height = "100%",
   })
-  lotj.layout.rightPanel:lockContainer("full")
-
-  lotj.layout.secondaryPanel = Adjustable.Container:new({
-    name = "lotj.layout.secondaryPanel",
-    width = rightPanelWidthPct..'%',
-    x = (100-rightPanelWidthPct)..'%',
-    y = 0, height = "100%", id = 2
-  })
-  lotj.layout.secondaryPanel:lockContainer("full")
-  lotj.layout.secondaryPanel:hide()
-
-  table.insert(lotj.layout.containers, lotj.layout.rightPanel)
-  table.insert(lotj.layout.containers, lotj.layout.secondaryPanel)
-
-  -- ID of the active panel
-  lotj.layout.activePanel = #lotj.layout.containers
-
   lotj.setup.registerEventHandler("sysWindowResizeEvent", setSizeOnResize)
   setSizeOnResize()
 
@@ -262,13 +252,16 @@ function lotj.layout.setup()
   end
 
   -- Upper-right pane, for maps
-  lotj.layout.upperContainer = Adjustable.Container:new({
+  lotj.layout.upperContainer = Geyser.Container:new({
     name = "Maps",
-    x = "0%", y = "0%",
+    x = 0, y = 0,
     width = "100%",
     height = upperRightHeightPct.."%",
   }, lotj.layout.rightPanel)
-  lotj.layout.upperContainer:lockContainer("full")
+
+  lotj.layout.upperRightTabData = {name = "upper"}
+  lotj.layout.upperRightTabData.tabList = {}
+
 
   -- Lower-right panel, for chat history
   lotj.layout.lowerContainer = Adjustable.Container:new({
@@ -277,15 +270,7 @@ function lotj.layout.setup()
     width = "100%",
     height = (100-upperRightHeightPct).."%",
   }, lotj.layout.rightPanel)
-  lotj.layout.lowerContainer:lockContainer("full")
 
-  -- Global to prevent recursive resize events
-  lotj.layout.rightPanel_resizing = false
-  lotj.setup.registerEventHandler("AdjustableContainerReposition", rightPanel_resize)
-  lotj.setup.registerEventHandler("AdjustableContainerRepositionFinish", rightPanel_resize)
-
-  lotj.layout.upperRightTabData = {name = "upper"}
-  lotj.layout.upperRightTabData.tabList = {}
   lotj.layout.lowerRightTabData = {name = "lower"}
   lotj.layout.lowerRightTabData.tabList = {}
 
@@ -361,9 +346,7 @@ function lotj.layout.setup()
 end
 
 function lotj.layout.teardown()
-  for _, c in ipairs(lotj.layout.containers) do
-    c:hide()
-  end
+  lotj.layout.rightPanel:hide()
   lotj.layout.upperContainer:hide()
   lotj.layout.lowerContainer:hide()
   lotj.layout.lowerInfoPanel:hide()

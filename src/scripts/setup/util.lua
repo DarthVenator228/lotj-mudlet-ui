@@ -339,3 +339,55 @@ function copyTableWithoutFunctions(tbl, seen)
 
   return out
 end
+
+-- Start Logging Event Handler
+function eventStartLogging(event, silence_failure)
+    local success, message, fileName, code = startLogging(true)
+    if (code == 1) then
+      cecho("\n<green>Logging Started!")
+      cecho("\n<green>File Name is: " .. fileName .. "\n<reset>")
+    elseif (code == -1) then
+      if silence_failure then return end
+      cecho("\n<green>Already Logging!\n<reset>")
+    end
+end
+
+-- End Logging Event Handler
+function eventEndLogging(event, silence_failure)
+  local original_path = getConfig("logDirectory")
+  local ext = ".txt"
+  if getConfig("logInHTML") then ext = ".html" end
+  local name = gmcpVarByPath("Char.Info.name")
+  if not name then
+    name = "default"
+  end
+  local log_path = original_path .. '/' .. name
+  if not io.exists(log_path) then
+    os.execute("mkdir " .. log_path)
+  end
+  setConfig("logDirectory", log_path)
+
+  local success, message, fileName, code = startLogging(false)
+
+  if (code == 0) then
+    cecho("\n<green>Logging Stopped!<reset>")
+    if name == "default" then
+      cecho("\n<red>No character name detected, logging at default.<reset>")
+    end
+
+    if (io.exists(fileName)) then
+      local newFileName = log_path .. '/' .. os.date("%Y-%m-%d#") .. string.gsub(os.date("%X"),':','-') .. ext
+      local result, resultMessage = os.rename(fileName, newFileName)
+      cecho("\n<green>Log File exists at: " .. newFileName .. '\n')
+    end
+
+  elseif (code == -2) then
+    if silence_failure then return end
+    cecho("\n<green>You weren't logging!\n<reset>")
+  end
+
+  setConfig("logDirectory", original_path)
+end
+
+lotj.setup.registerEventHandler("sysConnectionEvent", "eventStartLogging")
+lotj.setup.registerEventHandler("sysDisconnectionEvent", "eventEndLogging")

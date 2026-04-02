@@ -65,10 +65,6 @@ local function doSetup()
   -- Settings tab setup after chat setup
   lotj.settings.setupTab()
 
-  -- Then set our UI default view
-  lotj.layout.selectTab(lotj.layout.upperRightTabData, lotj.settings.startup_map)
-  lotj.layout.selectTab(lotj.layout.lowerRightTabData, lotj.settings.startup_chat)
-
   lotj.setup.registerEventHandler("gmcp.Char", debugChar)
   lotj.setup.registerEventHandler("gmcp.Room", debugRoom)
   lotj.setup.registerEventHandler("gmcp.Ship", debugShip)
@@ -86,19 +82,24 @@ local function doSetup()
   raiseEvent("lotjUiLoaded")
   geyserMapper:show()
   geyserMapper:raise()
-  -- For whatever reason Mudlet throws a fit about showing adjustable 
-  -- containers on startup so put it at the end of the queue
-  tempTimer(0, "lotj.layout.cycle()")
+
+  -- Then set our UI default view
+  tempTimer(0, [[
+    lotj.layout.selectTab(lotj.layout.upperRightTabData, lotj.settings.startup_map)
+    lotj.layout.selectTab(lotj.layout.lowerRightTabData, lotj.settings.startup_chat)
+  ]])
 end
 
 function lotj.setup.teardown()
+  debugc("lotj-ui -> teardown")
   for _, killId in ipairs(lotj.setup.eventHandlerKillIds) do
     killAnonymousEventHandler(killId)
   end
 
   lotj.mapper.teardown()
   lotj.layout.teardown()
-  -- lotj = nil
+  lotj = nil
+  debugc("lotj-ui -> exited")
 end
 
 lotj.setup.registerEventHandler("sysLoadEvent", function()

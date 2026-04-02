@@ -222,7 +222,6 @@ local primaryConfigDefinition = {
           name = "Startup Map",
           key = "startup_map",
           type = "dropdown",
-          -- options = lotj.layout.getTabNames(lotj.layout.upperRightTabData),
           options = {"map", "system", "galaxy"},
           update = function() return lotj.layout.getTabNames(lotj.layout.upperRightTabData) end,
           default = "map",
@@ -237,20 +236,10 @@ local primaryConfigDefinition = {
           key = "startup_chat",
           type = "dropdown",
           options = {"all", "local", "commnet", "clan", "broadcast", "ooc", "tell", "imm", "settings"},
+          update = function() return lotj.layout.getTabNames(lotj.layout.lowerRightTabData) end,
           default = "all",
           description = "Select which lower right chat tab to display on startup",
           icon = "⏻"
-        },
-        {
-          name = "Unlock Panel",
-          key = "unlock_rightPanel",
-          type = "button",
-          default = true,
-          description = "Show the UI panel borders to allow for moving/resizing",
-          icon = "▶️",
-          func = function()
-            Adjustable.Container.unlockContainer(lotj.layout.rightPanel)
-          end
         }
       }
     },
@@ -265,6 +254,22 @@ local primaryConfigDefinition = {
           description = "Enable debug logging and verbose output - Reload the profile for all features to take effect",
           icon = "🐛"
         },
+        {
+          name = "Log Style",
+          key = "logStyle",
+          type = "dropdown",
+          default = "TXT",
+          options = {"TXT", "HTML"},
+          description = "Select which extension to log in",
+          icon = "📁",
+          onChange = function(value)
+            if value == "TXT" then
+              setConfig("logInHTML", false)
+            else
+              setConfig("logInHTML", true)
+            end
+          end
+        }
         -- { -- Maybe one day if Mudlet adds a setCommandSeparator function 
         --   name = "Command Line Separator",
         --   key = "command_line_separator",
@@ -405,11 +410,10 @@ function lotj.settings.setup()
   lotj.configWindow = ModernConfigManager:new(primaryConfigDefinition, { style = mainStyle })
 
   primaryConfigDefinition:onLoad(lotj.settings)
-  -- primaryConfigDefinition.onSave(lotj.settings)
-  -- primaryConfigDefinition.onLoad(lotj.settings) -- Super hacky I know
 end
 
 function lotj.settings.setupTab()
   lotj.configWindow:create(lotj.chat["settings"])
+  -- lotj.configWindow:show()
   lotj.configWindow.container:lockContainer("full")
 end
