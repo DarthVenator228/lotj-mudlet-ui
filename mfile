@@ -1,6 +1,7 @@
 {
   "package": "lotj-ui",
-  "version": "v2.5.0",
+  "author": "Legends of the Jedi Community",
+  "version": "v2.5.1",
   "icon": "LOTJ.png",
   "outputFile": true
 }
