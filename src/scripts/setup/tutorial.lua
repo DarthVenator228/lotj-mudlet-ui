@@ -61,10 +61,6 @@ end
 --- user viewed the tutorial for the previous version, so only remove tutorial
 --- features if absolutely necessary, prefer to add on.
 function lotj.tutorial.run()
-  -- -- At the end always set the ran flag and save
-  -- lotj.tutorial.data.ran = true
-  -- table.save(path, lotj.tutorial.data)
-
   local tutorialElements = {}
   local flashTimerKillID = nil
 
@@ -114,7 +110,9 @@ function lotj.tutorial.run()
       lotj.autoResearch.command("help")
       lotj.mapper.mapCommand("help")
     end)
-
+    -- At the end always set the ran flag and save
+    lotj.tutorial.data.ran = true
+    table.save(path, lotj.tutorial.data)
   end
 
   -- Introduce the upper panel: `Galaxy`
@@ -508,7 +506,7 @@ end
 
 function lotj.tutorial.setup()
   lotj.tutorial.data = {}
-  local version = getPackageInfo("lotj-ui").version
+  local version = getPackageInfo("@PKGNAME@").version
 
   if io.exists(path) then
     table.load(path, lotj.tutorial.data)
@@ -536,6 +534,8 @@ function lotj.tutorial.setup()
   -- We have installed a new version
   elseif out == 1 then
     -- No need to check if the tutorial has already run
+    lotj.tutorial.data.ran = false
+    lotj.tutorial.data.newest = version
     lotj.setup.registerEventHandler("lotjUiLoaded", lotj.tutorial.run)
   end
 end
