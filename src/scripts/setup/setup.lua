@@ -61,6 +61,7 @@ local function doSetup()
   lotj.systemMap.setup()
   lotj.mapper.setup()
   lotj.comlinkInfo.setup()
+  lotj.tutorial.setup()
 
   -- Settings tab setup after chat setup
   lotj.settings.setupTab()
@@ -78,15 +79,15 @@ local function doSetup()
     func()
   end
 
-  debugc("lotj-ui finished")
-  raiseEvent("lotjUiLoaded")
   geyserMapper:show()
   geyserMapper:raise()
 
-  -- Then set our UI default view
+  -- Then set our UI default view and check for tutorial
   tempTimer(0, [[
     lotj.layout.selectTab(lotj.layout.upperRightTabData, lotj.settings.startup_map)
     lotj.layout.selectTab(lotj.layout.lowerRightTabData, lotj.settings.startup_chat)
+    debugc("lotj-ui finished")
+    raiseEvent("lotjUiLoaded")
   ]])
 end
 

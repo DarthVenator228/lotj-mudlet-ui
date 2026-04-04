@@ -47,16 +47,18 @@ local dataFileName = getMudletHomeDir().."/galaxyMap"
 -- Right-click menu configuration
 local rightClickMenuConfig = {
   Style = "Dark",
-  MenuWidth1 = 180,
+  MenuWidth1 = 30 * calcFontSize(getFontSize(), getFont()),
   MenuFormat1 = "c"..tostring(getFontSize()),
   MenuStyle1 = [[
     QLabel::hover {
       background-color: rgba(0,180,180,100%);
       color: white;
+      font-family: ]]..getFont()..[[;
     }
     QLabel::!hover {
       color: cyan;
       background-color: rgba(20,40,50,100%);
+      font-family: ]]..getFont()..[[;
     }
   ]]
 }
@@ -88,9 +90,22 @@ function lotj.galaxyMap.setup()
     width = "60%", height = 40,
   }, lotj.galaxyMap.container)
   lotj.galaxyMap.refreshButton:setStyleSheet([[
-    background-color: grey;
-    border: 1px solid white;
+    QLabel {
+      background-color: #333333;
+      border: 1px solid #00aaaa;
+      border-top-right-radius: 4px;
+      border-top-left-radius: 4px;
+      margin: 3px 3px 3px 3px;
+      font-family: ]] .. getFont() .. [[;
+    }
+    QLabel::hover {
+      background-color: rgb(0, 102, 102)
+    }
+    QLabel::!hover {
+      background-color :rgb(0, 26, 26)
+    }
   ]])
+  lotj.galaxyMap.refreshButton:setCursor("PointingHand")
   lotj.galaxyMap.refreshButton:echo("Click here to populate this map.", "white", "c14")
   lotj.galaxyMap.refreshButton:setClickCallback(function()
     lotj.galaxyMap.refresh()
@@ -115,6 +130,7 @@ function lotj.galaxyMap.setup()
       border: 2px solid #00dddd;
     }
   ]])
+  lotj.galaxyMap.addButton:setCursor("PointingHand")
   lotj.galaxyMap.addButton:echo("+", "white", "c20")
   lotj.galaxyMap.addButton:setClickCallback(lotj.galaxyMap.showAddSystemDialog)
 
@@ -308,21 +324,26 @@ function lotj.galaxyMap.showAddSystemDialog()
 
   -- Title
   local titleLabel = Geyser.Label:new({
+    name = "lotj_galaxyMap.titleLabel",
     x = "5%", y = 10,
     width = "90%", height = 30,
   }, lotj.galaxyMap.addDialog)
+  titleLabel:setStyleSheet(f"background-color: transparent; font-family: {getFont()}")
   titleLabel:echo("<center><b>Add System</b></center>", "white", "c18")
 
   -- Input row 1: System Name
   local inputHeight = 35
   local row1Y = 50
   local nameLabel = Geyser.Label:new({
+    name = "lotj_galaxyMap.nameLabel",
     x = 20, y = row1Y,
     width = 120, height = inputHeight,
   }, lotj.galaxyMap.addDialog)
+  nameLabel:setStyleSheet(f"background-color: transparent; font-family: {getFont()}")
   nameLabel:echo("System Name:", "white", "c12")
 
   lotj.galaxyMap.addDialog.nameInput = Geyser.CommandLine:new({
+    name = "lotj_galaxyMap.nameInput",
     x = 145, y = row1Y,
     width = 235, height = inputHeight,
   }, lotj.galaxyMap.addDialog)
@@ -336,12 +357,15 @@ function lotj.galaxyMap.showAddSystemDialog()
   -- Input row 2: X Coordinate
   local row2Y = 95
   local xLabel = Geyser.Label:new({
+    name = "lotj_galaxyMap.xLabel",
     x = 20, y = row2Y,
     width = 120, height = inputHeight,
   }, lotj.galaxyMap.addDialog)
+  xLabel:setStyleSheet(f"background-color: transparent; font-family: {getFont()}")
   xLabel:echo("X Coordinate:", "white", "c12")
 
   lotj.galaxyMap.addDialog.xInput = Geyser.CommandLine:new({
+    name = "lotj_galaxyMap.xInput",
     x = 145, y = row2Y,
     width = 235, height = inputHeight,
   }, lotj.galaxyMap.addDialog)
@@ -355,12 +379,15 @@ function lotj.galaxyMap.showAddSystemDialog()
   -- Input row 3: Y Coordinate
   local row3Y = 140
   local yLabel = Geyser.Label:new({
+    name = "lotj_galaxyMap.yLabel",
     x = 20, y = row3Y,
     width = 120, height = inputHeight,
   }, lotj.galaxyMap.addDialog)
+  yLabel:setStyleSheet(f"background-color: transparent; font-family: {getFont()}")
   yLabel:echo("Y Coordinate:", "white", "c12")
 
   lotj.galaxyMap.addDialog.yInput = Geyser.CommandLine:new({
+    name = "lotj_galaxyMap.yInput",
     x = 145, y = row3Y,
     width = 235, height = inputHeight,
   }, lotj.galaxyMap.addDialog)
@@ -378,6 +405,7 @@ function lotj.galaxyMap.showAddSystemDialog()
 
   -- Cancel button
   local cancelButton = Geyser.Label:new({
+    name = "lotj_galaxyMap.cancelButton",
     x = 40, y = buttonY,
     width = buttonWidth, height = buttonHeight,
   }, lotj.galaxyMap.addDialog)
@@ -385,12 +413,15 @@ function lotj.galaxyMap.showAddSystemDialog()
     background-color: #444444;
     border: 1px solid #666666;
     border-radius: 3px;
+    font-family: ]]..getFont()..[[;
   ]])
   cancelButton:echo("<center><b>Cancel</b></center>", "white", "c14")
+  cancelButton:setCursor("PointingHand")
   cancelButton:setClickCallback(lotj.galaxyMap.closeAddSystemDialog)
 
   -- Add System button
   local addButton = Geyser.Label:new({
+    name = "lotj_galaxyMap.addButton",
     x = 240, y = buttonY,
     width = buttonWidth, height = buttonHeight,
   }, lotj.galaxyMap.addDialog)
@@ -399,6 +430,7 @@ function lotj.galaxyMap.showAddSystemDialog()
       background-color: #006666;
       border: 1px solid #00aaaa;
       border-radius: 3px;
+      font-family: ]]..getFont()..[[;
     }
     QLabel:hover {
       background-color: rgba(0, 200, 200, 220);
@@ -406,6 +438,7 @@ function lotj.galaxyMap.showAddSystemDialog()
     }
   ]])
   addButton:echo("<center><b>Add System</b></center>", "white", "c14")
+  addButton:setCursor("PointingHand")
   addButton:setClickCallback(lotj.galaxyMap.handleAddSystemSubmit)
   lotj.galaxyMap.addDialog:raiseAll()
 end

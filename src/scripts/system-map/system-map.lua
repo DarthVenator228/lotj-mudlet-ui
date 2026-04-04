@@ -122,6 +122,7 @@ function lotj.systemMap.setup()
   }, tabContents)
   zoomInButton:setStyleSheet(controlButtonStyle)
   zoomInButton:echo("+", "white", "c18b")
+  zoomInButton:setCursor("PointingHand")
   zoomInButton:setClickCallback(function()
     if lotj.systemMap.mapRange > 1000 then
       lotj.systemMap.mapRange = lotj.systemMap.mapRange - 1000
@@ -139,6 +140,7 @@ function lotj.systemMap.setup()
   }, tabContents)
   zoomOutButton:setStyleSheet(controlButtonStyle)
   zoomOutButton:echo("-", "white", "c18b")
+  zoomOutButton:setCursor("PointingHand")
   zoomOutButton:setClickCallback(function()
     if lotj.systemMap.mapRange >= 1000 then
       lotj.systemMap.mapRange = lotj.systemMap.mapRange + 1000
@@ -156,6 +158,7 @@ function lotj.systemMap.setup()
   }, tabContents)
   refreshButton:setStyleSheet(controlButtonStyle)
   refreshButton:echo("Radar", "white", "12c")
+  refreshButton:setCursor("PointingHand")
   refreshButton:setClickCallback(function()
     lotj.systemMap.maskNextRadarOutput = true
     enableTrigger("system-map-radar")

@@ -269,6 +269,14 @@ local primaryConfigDefinition = {
               setConfig("logInHTML", true)
             end
           end
+        },
+        {
+          name = "Log Timer",
+          key = "logTimer",
+          type = "toggle",
+          default = true,
+          description = "Create a new log every day at midnight",
+          icon = "📁"
         }
         -- { -- Maybe one day if Mudlet adds a setCommandSeparator function 
         --   name = "Command Line Separator",

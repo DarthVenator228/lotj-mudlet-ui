@@ -163,17 +163,14 @@ function lotj.mapper.printHelp()
 
 <yellow>map start [<area name>]<reset>
 
-Begin mapping. Any new rooms you enter while mapping will be added to this area name, so you
-should be sure to stop mapping before entering a ship or moving to a different planet. No area
-name argument is required if you're on a planet, as we'll default to the planet name.
+Begin mapping. Any new rooms you enter while mapping will be added to this area name. No 
+area name argument is required if you're on a planet, as we'll default to the planet name.
 
 Some tips to remember:
  - Use a light while mapping. Entering a dark room where you can't see will not update the map.
  - Use <yellow>map shift<reset> to adjust room positioning, especially after going through turbolifts or
    voice-activated doors. It's faster to click-and-drag with the GUI to move large blocks of
    rooms, though.
- - Rooms in ships are all unique, even if they are the same model. In practice, mapping ships
-   really isn't supported yet, although platforms or ships you use frequently may be worth it.
 
 <yellow>map stop<reset>
 
@@ -199,7 +196,7 @@ that will trigger autowalk to that room. The search is case-insensitive and matc
 ]])
 
 
-  if gmcp.Char.Info.immLevel and gmcp.Char.Info.immLevel >= 102 then
+  if gmcpVarByPath("Char.Info.immLevel") and gmcpVarByPath("Char.Info.immLevel") >= 102 then
     cecho([[
 
 <yellow>map setroomcoords <area name><reset>
@@ -264,7 +261,7 @@ function lotj.mapper.deleteArea(areaName)
     lotj.mapper.logError("Area <yellow>"..areaName.."<reset> does not exist.")
     return
   end
-  
+
   if areaName == lotj.mapper.mappingArea then
     lotj.mapper.stopMapping()
   end

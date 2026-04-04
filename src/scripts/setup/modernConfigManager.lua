@@ -10,14 +10,14 @@
 --   3. Call ModernConfigManager:new(configDefinition):show()
 --
 -- Features:
---   • Toggle switches, sliders, dropdowns, and text inputs
+--   • Toggle switches, sliders, dropdowns, buttons, and text inputs
 --   • Scrollable categories with modern styling
 --   • Automatic default value initialization
 --   • Customizable callbacks and styling
 --   • Fully self-contained - no external dependencies
 --
 -- Author: Mudlet Community
--- Version: 1.1
+-- Version: 1.2
 -- License: MIT
 -- ============================================================================
 
@@ -121,7 +121,7 @@ Example configDef structure:
 function ModernConfigManager:new(configDef, options)
   local instance = {}
   setmetatable(instance, self)
-  
+
   -- Validate required parameters
   if not configDef then
     error("ModernConfigManager: configDef parameter is required")
@@ -129,30 +129,31 @@ function ModernConfigManager:new(configDef, options)
   if not configDef.configTable then
     error("ModernConfigManager: configDef.configTable is required - this should be the table that stores your settings")
   end
-  
+
   -- Store configuration definition
   instance.configDef = configDef
   instance.configTable = configDef.configTable
-  
+
   -- Set default name if not provided
   if not instance.configDef.name then
     instance.configDef.name = "config_" .. math.random(1000, 9999)
   end
-  
+
   -- Merge styling options with defaults
   instance.style = DEFAULT_STYLE
   if options and options.style then
     instance.style = instance:deepMerge(DEFAULT_STYLE, options.style)
   end
-  
+
   -- Initialize default values in config table
   instance:initializeDefaults()
-  
+
   -- UI elements
   instance.container = nil
   instance.scrollArea = nil
   instance.contentContainer = nil
-  
+  instance.configItems = {}
+
   return instance
 end
 
@@ -162,7 +163,7 @@ end
 
 function ModernConfigManager:deepMerge(default, override)
   local result = {}
-  
+
   -- Copy default values
   for k, v in pairs(default) do
     if type(v) == "table" then
@@ -171,7 +172,7 @@ function ModernConfigManager:deepMerge(default, override)
       result[k] = v
     end
   end
-  
+
   -- Override with new values
   for k, v in pairs(override) do
     if type(v) == "table" and type(result[k]) == "table" then
@@ -180,13 +181,13 @@ function ModernConfigManager:deepMerge(default, override)
       result[k] = v
     end
   end
-  
+
   return result
 end
 
 function ModernConfigManager:initializeDefaults()
   if not self.configDef.categories then return end
-  
+
   for _, category in ipairs(self.configDef.categories) do
     if category.items then
       for _, item in ipairs(category.items) do
@@ -264,7 +265,7 @@ function ModernConfigManager:create(parent)
     width = "100%",
     height = "100%"
   }, self.scrollArea)
-  
+
   self.contentContainer:setStyleSheet([[
     background-color: transparent;
     color: ]] .. self.style.colors.text .. [[;
@@ -281,11 +282,11 @@ end
 
 function ModernConfigManager:buildCategories()
   if not self.configDef.categories then return end
-  
+
   local yPos = 10
   local _, categoryHeight = calcFontSize(14, getFont())
   local _, itemHeight = calcFontSize(11, getFont())
-  
+
   for _, category in ipairs(self.configDef.categories) do
     -- Category header
     local categoryLabel = Geyser.Label:new({
@@ -293,7 +294,7 @@ function ModernConfigManager:buildCategories()
       x = 10, y = yPos,
       width = "95%", height = categoryHeight + 5
     }, self.contentContainer)
-    
+
     categoryLabel:setStyleSheet([[
       QLabel {
         color: ]] .. self.style.colors.categoryText .. [[;
@@ -310,19 +311,19 @@ function ModernConfigManager:buildCategories()
     ]])
     categoryLabel:setFont(getFont())
     categoryLabel:echo(category.name)
-    
+
     yPos = yPos + categoryHeight + 15
-    
+
     -- Category items
     if category.items then
       for _, item in ipairs(category.items) do
         yPos = yPos + self:createConfigItem(item, yPos, itemHeight)
       end
     end
-    
+
     yPos = yPos + 20 -- spacing between categories
   end
-  
+
   -- Adjust content container height
   self.contentContainer:resize(self.contentContainer:get_width(), yPos)
 end
@@ -367,10 +368,10 @@ function ModernConfigManager:createConfigItem(item, yPos, itemHeight)
     font-size: ]] .. (itemHeight-2) .. [[px;
   ]])
   iconLabel:setFont(getFont())
-  
+
 ---@diagnostic disable-next-line: unbalanced-assignments
   local width, height = calcFontSize(8, getFont()) * #item.name
-  
+
   local nameLabel = Geyser.Label:new({
     name = "name_" .. item.key .. "_" .. uniqueName,
     x = itemHeight + 15, y = 2,
@@ -385,7 +386,7 @@ function ModernConfigManager:createConfigItem(item, yPos, itemHeight)
     qproperty-alignment: 'AlignLeft | AlignVCenter';
   ]])
   nameLabel:setFont(getFont())
-  
+
   -- Control based on type
   if item.type == "toggle" then
     self:createToggle(item, itemContainer, itemHeight)
@@ -414,7 +415,9 @@ function ModernConfigManager:createConfigItem(item, yPos, itemHeight)
       qproperty-alignment: 'AlignCenter';
     ]])
   end
-  
+
+  self.configItems[item.key] = itemContainer
+
   return itemHeight + 20
 end
 
@@ -444,6 +447,7 @@ function ModernConfigManager:createButton(item, parent, height)
     }
   ]])
   button:setFont(getFont())
+  button:setCursor("PointingHand")
   button:echo("Activate")
 
   if item.description then button:setToolTip(item.description) end
@@ -458,12 +462,12 @@ function ModernConfigManager:createToggle(item, parent, height)
     x = "70%", y = 2,
     width = "25%", height = height + 5
   }, parent)
-  
+
   local isEnabled = self:getItemValue(item)
-  
+
   local bgColor = isEnabled and self.style.colors.toggleOn or self.style.colors.toggleOff
   local text = isEnabled and "ON" or "OFF"
-  
+
   toggle:setStyleSheet([[
     QLabel {
       background: ]] .. bgColor .. [[;
@@ -478,25 +482,25 @@ function ModernConfigManager:createToggle(item, parent, height)
     }
   ]])
   toggle:setFont(getFont())
-  
+  toggle:setCursor("PointingHand")
   toggle:echo(text)
   toggle:setClickCallback(function() self:toggleItem(item, toggle, height) end)
 end
 
 function ModernConfigManager:createSlider(item, parent, height)
   local uniqueName = self.configDef.name
-  
+
   -- Validate slider parameters
   item.min = item.min or 0
   item.max = item.max or 100
   item.step = item.step or 1
-  
+
   local valueLabel = Geyser.Label:new({
     name = "value_" .. item.key .. "_" .. uniqueName,
     x = "50%", y = 2,
     width = "20%", height = height + 5
   }, parent)
-  
+
   -- Initial display
   local currentVal = self:getItemValue(item)
   valueLabel:echo(string.format("%.1f%s", currentVal, item.suffix or ""))
@@ -508,13 +512,14 @@ function ModernConfigManager:createSlider(item, parent, height)
     qproperty-alignment: 'AlignCenter';
   ]])
   valueLabel:setFont(getFont())
-  
+
   -- Decrease button
   local decBtn = Geyser.Label:new({
     name = "dec_" .. item.key .. "_" .. uniqueName,
     x = "72%", y = 2,
     width = "10%", height = height + 5
   }, parent)
+  decBtn:setCursor("PointingHand")
   decBtn:echo("−")
   decBtn:setStyleSheet(self:getButtonStyle())
   decBtn:setClickCallback(function()
@@ -530,6 +535,7 @@ function ModernConfigManager:createSlider(item, parent, height)
     x = "84%", y = 2,
     width = "10%", height = height + 5
   }, parent)
+  incBtn:setCursor("PointingHand")
   incBtn:echo("+")
   incBtn:setStyleSheet(self:getButtonStyle())
   incBtn:setClickCallback(function()
@@ -544,7 +550,7 @@ function ModernConfigManager:createDropdown(item, parent, height)
   local uniqueName = self.configDef.name
   local currentVal = self:getItemValue(item)
   local currentIndex = 1
-  
+
   -- Validate options exist
   if not item.options or #item.options == 0 then
     item.options = {"Option 1", "Option 2"}
@@ -553,7 +559,7 @@ function ModernConfigManager:createDropdown(item, parent, height)
   if item.update and type(item.update) == "function" then
     item.options = item.update()
   end
-  
+
   -- Find current option index
   for i, option in ipairs(item.options) do
     if option == currentVal then
@@ -561,13 +567,13 @@ function ModernConfigManager:createDropdown(item, parent, height)
       break
     end
   end
-  
+
   local dropdown = Geyser.Label:new({
     name = "dropdown_" .. item.key .. "_" .. uniqueName,
     x = "60%", y = 2,
     width = "35%", height = height + 5
   }, parent)
-  
+  dropdown:setCursor("PointingHand")
   dropdown:echo(tostring(currentVal) .. " ▼")
   dropdown:setStyleSheet([[
     QLabel {
@@ -582,7 +588,7 @@ function ModernConfigManager:createDropdown(item, parent, height)
     }
   ]])
   dropdown:setFont(getFont())
-  
+
   dropdown:setClickCallback(function()
 
     local nextIndex = (currentIndex % #item.options) + 1
@@ -595,14 +601,14 @@ end
 
 function ModernConfigManager:createInput(item, parent, height)
   local uniqueName = self.configDef.name
-  
+
   -- For input, we'll use a simple label that opens a dialog when clicked
   local input = Geyser.Label:new({
     name = "input_" .. item.key .. "_" .. uniqueName,
     x = "50%", y = 2,
     width = "45%", height = height + 5
   }, parent)
-  
+
   input:setStyleSheet([[
     QLabel {
       background: ]] .. self.style.colors.header .. [[;
@@ -617,20 +623,20 @@ function ModernConfigManager:createInput(item, parent, height)
     }
   ]])
   input:setFont(getFont())
-  
+  input:setCursor("PointingHand")
   local currentVal = self:getItemValue(item)
   local displayText = tostring(currentVal)
-  
+
   -- Truncate long text for display
   if string.len(displayText) > 20 then
     displayText = string.sub(displayText, 1, 17) .. "..."
   end
-  
+
   input:echo(displayText .. " ✏️")
-  
+
   -- Set callback for when clicked - opens input dialog
   input:setClickCallback(function()
-  
+
     -- For input, we'll use a simple command line
     local inputCmdLine = Geyser.CommandLine:new({
       name = "cmdLine_" .. item.key .. "_" .. uniqueName,
@@ -638,23 +644,23 @@ function ModernConfigManager:createInput(item, parent, height)
       width = "96%", height = 20,
       stylesheet = "border: 1px solid silver; background-color: rgb(20,30,40);"
     }, parent)
-    
+
     local currentValue = tostring(self:getItemValue(item))
-    
+
     inputCmdLine:print(currentValue)
     inputCmdLine:selectText()
-  
+
     inputCmdLine:setAction(
     function(commandLineInput)
       local newValue = tostring(commandLineInput)
-      
+
       if item.inputType == "number" then
 ---@diagnostic disable-next-line: cast-local-type
         newValue = tonumber(newValue) or 0
       end
-      
+
       self:setItemValue(item, newValue)
-      
+
       inputCmdLine:hide()
       self:refresh()
     end)
@@ -871,7 +877,7 @@ end
 function ModernConfigManager:createBottomButtons()
   local buttonHeight = 35
   local buttonY = "87%"
-  
+
   local buttonsConfig = self.configDef.buttons or {}
   local defaultButtons = {
     {name = "💾 Save", callback = self.configDef.onSave and function() self.configDef:onSave(self.configTable) end, style = "primary", x = "10%", width = "25%"},
@@ -904,7 +910,7 @@ function ModernConfigManager:createBottomButtons()
   end
   -- Use custom buttons if provided, otherwise use defaults
   local buttons = #buttonsConfig > 0 and buttonsConfig or defaultButtons
-  
+
   for i, btnConfig in ipairs(buttons) do
     if btnConfig.callback then -- Only create button if it has a callback
       local uniqueName = self.configDef.name
@@ -916,16 +922,16 @@ function ModernConfigManager:createBottomButtons()
         height = buttonHeight
       }, self.container)
       btn:setFont(getFont())
-      
+      btn:setCursor("PointingHand")
       btn:echo(btnConfig.name)
-      
+
       local style = "primary"
       if btnConfig.style == "danger" then
         style = self:getDangerButtonStyle()
       else
         style = self:getPrimaryButtonStyle()
       end
-      
+
       btn:setStyleSheet(style)
       btn:setClickCallback(btnConfig.callback)
     end
@@ -938,7 +944,7 @@ end
 
 function ModernConfigManager:resetToDefaults()
   if not self.configDef.categories then return end
-  
+
   for _, category in ipairs(self.configDef.categories) do
     if category.items then
       for _, item in ipairs(category.items) do
@@ -952,10 +958,10 @@ function ModernConfigManager:resetToDefaults()
       end
     end
   end
-  
+
   -- Refresh the UI
   self:refresh()
-  
+
   -- Call onChange callback for reset
   if self.configDef.onChange and type(self.configDef.onChange) == "function" then
     pcall(self.configDef.onChange, "RESET", nil, self.configTable)
@@ -1007,7 +1013,7 @@ function ModernConfigManager:show()
     self:create()
   end
   tempTimer(0,
-    function() 
+    function()
       self.container:show()
       self.container:raise()
     end
