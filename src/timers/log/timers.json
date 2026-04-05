@@ -1,6 +1,6 @@
 [
        {
-              "name": "lotj-ui.Log",
+              "name": "log",
               "isActive": "yes",
               "command": "",
               "hours": "1",

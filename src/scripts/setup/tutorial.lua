@@ -88,7 +88,7 @@ function lotj.tutorial.run()
     tutorialElements.farewell = Geyser.Label:new({
       name="tutorial_farwell",
       x="0%",y="25%",width="100%",height="50%",
-      fontSize=getFontSize()+5,
+      fontSize = 14,
       message=[[<center><p>
       You made it to the end of the tutorial!<br>
       If it's your first time playing,<br>
@@ -109,6 +109,11 @@ function lotj.tutorial.run()
       lotj.galaxyMap.showHelp()
       lotj.autoResearch.command("help")
       lotj.mapper.mapCommand("help")
+      send("HELP DISCORD")
+      tempTimer(1, function()
+        cecho("<reset>\nConsider joining the discord! You'll find lots of resources and helpful people.\n")
+        eventStartLogging()
+      end)
     end)
     -- At the end always set the ran flag and save
     lotj.tutorial.data.ran = true
@@ -168,7 +173,7 @@ function lotj.tutorial.run()
     tutorialElements.lowerCon = Geyser.Label:new({
       name="tutorial_lowerCon",
       x="0%",y="0%",width="100%",height="100%",
-      fontSize = getFontSize() + 5,
+      fontSize = 14,
       message = [[<center>
       <p>Above is the Map tab</p>
       <p>Here your position will update as you explore the galaxy!<br>
@@ -439,7 +444,7 @@ function lotj.tutorial.run()
     tutorialElements.upperCon = Geyser.Label:new({
       name="tutorial_upperCon",
       x="0%",y="0%",width="100%",height="100%",
-      fontSize = getFontSize() + 5,
+      fontSize = 14,
       message = [[<center>
       <p>Below is the Settings tab</p>
       <p>Here you'll find all the settings the LotJ-UI can modify</p>

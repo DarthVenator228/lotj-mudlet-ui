@@ -5,6 +5,10 @@
       {
         "pattern": "^You enter .+ '(?<ship_name>.+)'\\.$",
         "type": "regex"
+      },
+      {
+        "pattern": "^You step through the hatchway of .+ '(?<ship_name>.+)'\\.$",
+        "type": "regex"
       }
     ],
     "script": "lotj.mapper.setCurrentShipName(matches.ship_name)"
