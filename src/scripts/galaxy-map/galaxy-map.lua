@@ -42,7 +42,8 @@ lotj.galaxyMap = lotj.galaxyMap or {
     ["Hapes"] = "hapes.png",
     ["Kamino"] = "kamino.png",
     ["Manaan"] = "manaan.png",
-    ["Naboo"] = "naboo.png"
+    ["Naboo"] = "naboo.png",
+    ["Mandalore"] = "mandalore.png"
     -- Add more planet-specific mappings here as needed
     -- ["Planet Name"] = "planetX.png",
   }
