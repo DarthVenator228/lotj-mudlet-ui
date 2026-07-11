@@ -363,7 +363,7 @@ function eventEndLogging(event, silence_failure)
   end
   local log_path = original_path .. '/' .. name
   if not io.exists(log_path) then
-    os.execute("mkdir " .. log_path)
+    os.execute("mkdir \"" .. log_path .."\"")
   end
   setConfig("logDirectory", log_path)
 
@@ -376,7 +376,7 @@ function eventEndLogging(event, silence_failure)
     end
 
     if (io.exists(fileName)) then
-      local newFileName = log_path .. '/' .. os.date("%Y-%m-%d#") .. string.gsub(os.date("%X"),':','-') .. ext
+      local newFileName = log_path .. '/' .. os.date("%Y-%m-%d#") .. string.gsub(os.date("%X"),':','-') .. "-" .. name .. ext
       local result, resultMessage = os.rename(fileName, newFileName)
       cecho("\n<green>Log File exists at: " .. newFileName .. '\n')
     end
@@ -389,5 +389,15 @@ function eventEndLogging(event, silence_failure)
   setConfig("logDirectory", original_path)
 end
 
-lotj.setup.registerEventHandler("sysConnectionEvent", "eventStartLogging")
-lotj.setup.registerEventHandler("sysDisconnectionEvent", "eventEndLogging")
+function lotj.applyLoggingHandlers()
+  if lotj.logstart then killAnonymousEventHandler(lotj.logstart) end
+  if lotj.logstop then killAnonymousEventHandler(lotj.logstop) end
+  lotj.logstart = nil
+  lotj.logstop = nil
+  if lotj.settings.logging then
+    lotj.logstart = registerAnonymousEventHandler("sysConnectionEvent", "eventStartLogging")
+    lotj.logstop = registerAnonymousEventHandler("sysDisconnectionEvent", "eventEndLogging")
+  end
+end
+
+lotj.setup.registerEventHandler("lotjUiLoaded", lotj.applyLoggingHandlers)
