@@ -1,6 +1,7 @@
 mudlet = mudlet or {}; mudlet.mapper_script = true
 lotj = lotj or {}
 lotj.mapper = lotj.mapper or {}
+lotj.mapper.darkRoom = false
 
 
 local dirs = {}
@@ -80,7 +81,7 @@ local amenityEnvCodes = {
   },
   ["turbolift"] = {
     envCode = 263,
-    symbol = "T"
+    symbol = "T" -- 🛗
   },
 }
 
@@ -398,6 +399,12 @@ function lotj.mapper.processCurrentRoom()
   local moveDir = lotj.mapper.popMoveDir()
   local room = lotj.mapper.getRoomByVnum(vnum)
 
+  if lotj.mapper.darkRoom and room ~= nil then
+    lotj.mapper.logDebug("Mapping starting after leaving dark room.")
+    lotj.mapper.darkRoom = false
+    lotj.mapper.startMapping()
+  end
+
   if lotj.mapper.mappingArea == nil and room == nil then
     lotj.mapper.logDebug("Room not found, but mapper not running.")
     return
@@ -633,6 +640,7 @@ function lotj.mapper.onEnterRoom()
         if lotj.mapper.mappingArea then
           -- Restart mapping in the new area
           lotj.mapper.stopMapping()
+          lotj.mapper.logDebug("Mapper starting from ship boarding")
           lotj.mapper.startMapping(lotj.mapper.current.ship_name)
         -- We are not mapping
         else
@@ -650,6 +658,7 @@ function lotj.mapper.onEnterRoom()
       if lotj.mapper.mappingArea then
         -- Restart mapping in the new area
         lotj.mapper.stopMapping()
+        lotj.mapper.logDebug("Mapper starting from a planet room")
         lotj.mapper.startMapping(lotj.mapper.current.ship_name)
       -- We are not mapping
       else
@@ -666,6 +675,7 @@ function lotj.mapper.onEnterRoom()
       if lotj.mapper.mappingArea then
         -- Restart mapping in the new area
         lotj.mapper.stopMapping()
+        lotj.mapper.logDebug("Mapping starting from a ship room")
         lotj.mapper.startMapping(lotj.mapper.current.planet)
       -- We are not mapping
       else
@@ -692,6 +702,13 @@ end
 -- Utility Functions
 ------------------------------------------------------------------------------
 
+function lotj.mapper.enterDarkRoom()
+  if not lotj.mapper.darkRoom then
+    lotj.mapper.stopMapping()
+    lotj.mapper.darkRoom = true
+    lotj.mapper.current.vnum = nil
+  end
+end
 
 function lotj.mapper.log(text)
   cecho("[<cyan>LOTJ Mapper<reset>] "..text.."\n")

@@ -1,5 +1,15 @@
 [
   {
+    "name": "dark-room",
+    "patterns": [
+      {
+        "pattern": "^It is pitch black ... $",
+        "type": "regex"
+      }
+    ],
+    "script": "lotj.mapper.enterDarkRoom()"
+  },
+  {
     "name": "enter-ship",
     "patterns": [
       {

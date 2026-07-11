@@ -158,7 +158,7 @@
     "name": "tell",
     "patterns": [
       {
-        "pattern": "\\(OO\\) (?<sender>.+) tells you(?:\\((?<receiver>.+)\\))? '(?<message>.+)'$",
+        "pattern": "^\\(OOC\\) (?<sender>.+) tells you (?:\\((?<receiver>.+)\\))? '(?<message>.+)'$",
         "type": "regex"
       },
       {

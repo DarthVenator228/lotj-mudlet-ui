@@ -113,13 +113,13 @@ lotj.setup.registerEventHandler("sysInstallPackage", function(_, pkgName)
     uninstallPackage("generic_mapper")
   end
 
-  if pkgName ~= "lotj-ui" then return end
+  if pkgName ~= "@PKGNAME" then return end
   sendGMCP("Core.Supports.Set", "[\"Ship 1\"]")
   doSetup()
 end)
 
 lotj.setup.registerEventHandler("sysUninstallPackage", function(_, pkgName)
-  if pkgName ~= "lotj-ui" then return end
+  if pkgName ~= "@PKGNAME@" then return end
   lotj.setup.teardown()
 end)
 
