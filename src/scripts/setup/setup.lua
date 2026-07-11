@@ -113,7 +113,7 @@ lotj.setup.registerEventHandler("sysInstallPackage", function(_, pkgName)
     uninstallPackage("generic_mapper")
   end
 
-  if pkgName ~= "@PKGNAME" then return end
+  if pkgName ~= "@PKGNAME@" then return end
   sendGMCP("Core.Supports.Set", "[\"Ship 1\"]")
   doSetup()
 end)
