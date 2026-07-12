@@ -264,9 +264,7 @@ function lotj.tutorial.run()
     con:clear()
     con:echo([[<center>
     <p>Scroll down until you see the flashing<br>label and click it<br><br>
-    This category contains settings for advanced users<br>
-    If you want to experiment with scripting and expl-<br>
-    ore how the package works, enable debug mode<br>
+    This category contains settings for in-game logging<br>
     During play you should always be logging<br>
     Logging in HTML allows you to see in color when you<br>
     review your logs in the future<br></p>
@@ -275,7 +273,7 @@ function lotj.tutorial.run()
     con:show()
     con:raise()
     con:setCursor("PointingHand")
-    local category = lotj.configWindow.scrollArea.windowList.configContent_lotj.windowList.category_Advanced_Options_lotj
+    local category = lotj.configWindow.scrollArea.windowList.configContent_lotj.windowList.category_Logging_lotj
     local function resetCategory()
       killTimer(flashTimerKillID)
       category:setClickCallback(function() end)
