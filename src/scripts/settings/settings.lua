@@ -244,16 +244,8 @@ local primaryConfigDefinition = {
       }
     },
     {
-      name = "Advanced Options",
+      name = "Logging",
       items = {
-        {
-          name = "Debug Mode",
-          key = "debugMode",
-          type = "toggle",
-          default = false,
-          description = "Enable debug logging and verbose output - Reload the profile for all features to take effect",
-          icon = "🐛"
-        },
         {
           name = "Log Style",
           key = "logStyle",
@@ -271,12 +263,28 @@ local primaryConfigDefinition = {
           end
         },
         {
-          name = "Log Timer",
+          name = "Enable Logging",
+          key = "logging",
+          type = "toggle",
+          default = false,
+          description = "Automatically start and stop logging when connecting and disconnecting",
+          icon = "📁",
+          onChange = function(value)
+            lotj.applyLoggingHandlers()
+            if value then
+              eventStartLogging(nil, true)
+            else
+              eventEndLogging(nil, true)
+            end
+          end
+        },
+        {
+          name = "Daily Log Rotation Timer",
           key = "logTimer",
           type = "toggle",
-          default = true,
+          default = false,
           description = "Create a new log every day at midnight",
-          icon = "📁"
+          icon = "⏱️"
         }
         -- { -- Maybe one day if Mudlet adds a setCommandSeparator function 
         --   name = "Command Line Separator",
@@ -304,6 +312,14 @@ local primaryConfigDefinition = {
     {
       name = "Debug Options",
       items = {
+        {
+          name = "Debug Mode",
+          key = "debugMode",
+          type = "toggle",
+          default = false,
+          description = "Enable debug logging and verbose output - Reload the profile for all features to take effect",
+          icon = "🐛"
+        },
         {
           name = "GMCP Output",
           key = "debugGMCP_out",
