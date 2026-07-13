@@ -54,9 +54,9 @@ local dataFileName = getMudletHomeDir().."/galaxyMap"
 -- Right-click menu configuration
 local rightClickMenuConfig = {
   Style = "Dark",
-  MenuWidth1 = 30 * calcFontSize(getFontSize(), getFont()),
-  MenuFormat1 = "c"..tostring(getFontSize()),
-  MenuStyle1 = [[
+  MenuWidth = 30 * calcFontSize(getFontSize(), getFont()),
+  MenuFormat = "c"..tostring(getFontSize()),
+  MenuStyle = [[
     QLabel::hover {
       background-color: rgba(0,180,180,100%);
       color: white;
@@ -755,9 +755,9 @@ function lotj.galaxyMap.drawSystems()
     local menuConfig = {
       MenuItems = menuItems,
       Style = rightClickMenuConfig.Style,
-      MenuWidth1 = rightClickMenuConfig.MenuWidth1,
-      MenuFormat1 = rightClickMenuConfig.MenuFormat1,
-      MenuStyle1 = rightClickMenuConfig.MenuStyle1
+      MenuWidth = rightClickMenuConfig.MenuWidth,
+      MenuFormat = rightClickMenuConfig.MenuFormat,
+      MenuStyle = rightClickMenuConfig.MenuStyle
     }
     point:createRightClickMenu(menuConfig)
 
