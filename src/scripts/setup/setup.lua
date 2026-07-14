@@ -4,6 +4,7 @@ debugc("lotj-ui -> setup.lua")
 
 lotj = lotj or {}
 lotj.settings = lotj.settings or {}
+lotj.configTable = lotj.configTable or {}
 lotj.setup = lotj.setup or {}
 lotj.setup.eventHandlerKillIds = lotj.setup.eventHandlerKillIds or {}
 lotj.setup.gmcpEventHandlerFuncs = lotj.setup.gmcpEventHandlerFuncs or {}
@@ -47,6 +48,47 @@ local function debugClient()
   lotj.chat.debugLog("Client")
 end
 
+local function saveData()
+  if lotj and lotj.mapper and lotj.configTable then
+    lotj.configTable.mappingArea = false
+    if lotj.mapper.mappingArea then
+      lotj.configTable.mappingArea = true
+    end
+  end
+
+  lotj.configTable = copyTableWithoutFunctions(lotj.configTable)
+  lotj.chat.debugLog("Saving lotj.configTable dynamic settings...")
+  -- Example: save to JSON file
+  -- local json = require("dkjson")
+  local json = require("@PKGNAME@.dkjson")
+  local file = io.open(getMudletHomeDir().."/.dynamic_settings.lua", "w")
+  if file then
+    file:write(json.encode(lotj.configTable))
+    file:close()
+    lotj.chat.debugLog(".dynamic_settings.lua successfully saved.")
+  end
+end
+
+local function loadData()
+  lotj.chat.debugLog("Loading .dynamic_settings.lua...")
+  -- Example: load from JSON file
+  -- local json = require("dkjson")
+  local json = require("@PKGNAME@.dkjson")
+  local file = io.open(getMudletHomeDir().."/.dynamic_settings.lua", "r")
+  if file == nil then
+    saveData()
+    file = io.open(getMudletHomeDir().."/.dynamic_settings.lua", "r")
+  end
+  if file then
+    local content = file:read("*all")
+    file:close()
+    local loaded = json.decode(content)
+    lotj.chat.debugLog(".dynamic_settings.lua successfully loaded.")
+    lotj.configTable = loaded
+    display(loaded)
+  end
+end
+
 local function doSetup()
   -- No setup can be done without default settings being loaded
   lotj.settings.setup()
@@ -62,6 +104,7 @@ local function doSetup()
   lotj.mapper.setup()
   lotj.comlinkInfo.setup()
   lotj.tutorial.setup()
+  loadData()
 
   -- Settings tab setup after chat setup
   lotj.settings.setupTab()
@@ -72,6 +115,9 @@ local function doSetup()
   lotj.setup.registerEventHandler("gmcp.External", debugExternal)
   lotj.setup.registerEventHandler("gmcp.Client", debugClient)
 
+  -- Event handler for saving data on profile close
+  -- lotj.setup.registerEventHandler("sysDisconnectionEvent", saveData) -- We do not save data on disconnect so dynamic settings are not shared between quick character swaps
+  lotj.setup.registerEventHandler("sysExitEvent", saveData)
 
   -- Manually kick off all GMCP event handlers, since GMCP data would not have changed
   -- since loading the UI.

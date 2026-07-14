@@ -39,7 +39,7 @@
         "type": "regex"
       },
       {
-        "pattern": "^'.*' you sign, in Lorrdian$",
+        "pattern": "^'.*' you sign, in Lorrdian\\.$",
         "type": "regex"
       },
       {

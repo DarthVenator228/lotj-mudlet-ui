@@ -1,7 +1,7 @@
 mudlet = mudlet or {}; mudlet.mapper_script = true
 lotj = lotj or {}
 lotj.mapper = lotj.mapper or {}
-lotj.mapper.darkRoom = false
+lotj.mapper.darkRoom = true
 
 
 local dirs = {}
@@ -248,6 +248,7 @@ function lotj.mapper.stopMapping()
   end
   lotj.mapper.mappingArea = nil
   lotj.mapper.lastMoveDirs = nil
+  lotj.mapper.darkRoom = false
   lotj.mapper.log("Mapping stopped<reset>.")
 end
 
@@ -618,14 +619,24 @@ function lotj.mapper.onEnterRoom()
     lotj.mapper.current.z = gmcp.Room.Info.z
   end
 
+  if not lotj.mapper.mappingArea and not lotj.mapper.darkRoom and lotj.configTable and lotj.configTable.mappingArea then
+    lotj.mapper.logDebug("Started mapping based off previous configuration.")
+    lotj.mapper.startMapping()
+  end
+
   -- If the new room has has a planet different than the last one and we don't have
   -- an area for that planet yet, give a prompt about how to start mapping it.
   if lotj.mapper.current.planet then
     if lotj.mapper.last and lotj.mapper.last.planet ~= lotj.mapper.current.planet then
-      if getAreaTable()[lotj.mapper.current.planet] == nil then
-        lotj.mapper.log("Welcome to <yellow>"..lotj.mapper.current.planet.."<reset>. "..
-          "To begin mapping this area as you explore, type <yellow>map start<reset>.")
-        echo("\n")
+      if lotj.mapper.mappingArea then
+        lotj.mapper.stopMapping()
+        lotj.mapper.startMapping()
+      else
+        if getAreaTable()[lotj.mapper.current.planet] == nil then
+          lotj.mapper.log("Welcome to <yellow>"..lotj.mapper.current.planet.."<reset>. "..
+            "To begin mapping this area as you explore, type <yellow>map start<reset>.")
+          echo("\n")
+        end
       end
     end
   end
