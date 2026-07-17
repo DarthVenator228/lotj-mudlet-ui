@@ -85,7 +85,6 @@ local function loadData()
     local loaded = json.decode(content)
     lotj.chat.debugLog(".dynamic_settings.lua successfully loaded.")
     lotj.configTable = loaded
-    display(loaded)
   end
 end
 
