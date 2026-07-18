@@ -1,6 +1,8 @@
 lotj = lotj or {}
 lotj.settings = lotj.settings or {}
 
+local os = getOS()
+
 local settingsFile = getMudletHomeDir().."/lotj_ui_settings.lua"
 
 local primaryConfigDefinition = {
@@ -96,28 +98,6 @@ local primaryConfigDefinition = {
           icon = "🔭",
           onChange = function(value, key)
             if value then enableKey("lotj-ui_scan") else disableKey("lotj-ui_scan") end
-          end
-        },
-        {
-          name = "Retreat (Linux)",
-          key = "numpad_retreat_linux",
-          type = "toggle",
-          default = false,
-          description = "Enable/disable retreat with shift+numpad",
-          icon = "💨",
-          onChange = function(value, key)
-            if value then enableKey("lotj-ui_retreat-linux") else disableKey("lotj-ui_retreat-linux") end
-          end
-        },
-        {
-          name = "Retreat (Windows)",
-          key = "numpad_retreat_windows",
-          type = "toggle",
-          default = false,
-          description = "Enable/disable retreat with shift+numpad",
-          icon = "💨",
-          onChange = function(value, key)
-            if value then enableKey("lotj-ui_retreat-windows") else disableKey("lotj-ui_retreat-windows") end
           end
         },
         {
@@ -392,6 +372,38 @@ local primaryConfigDefinition = {
 
   overrideClose = true
 }
+
+-- OS dependent settings
+if os == "linux" then
+  table.insert(primaryConfigDefinition.categories[2].items,
+    {
+      name = "Retreat",
+      key = "numpad_retreat_linux",
+      type = "toggle",
+      default = false,
+      description = "Enable/disable retreat with shift+numpad",
+      icon = "💨",
+      onChange = function(value, key)
+        if value then enableKey("lotj-ui_retreat-linux") else disableKey("lotj-ui_retreat-linux") end
+      end
+    }
+  )
+elseif os == "windows" then
+  table.insert(primaryConfigDefinition.categories[2].items,
+    {
+      name = "Retreat",
+      key = "numpad_retreat_windows",
+      type = "toggle",
+      default = false,
+      description = "Enable/disable retreat with shift+numpad",
+      icon = "💨",
+      onChange = function(value, key)
+        if value then enableKey("lotj-ui_retreat-windows") else disableKey("lotj-ui_retreat-windows") end
+      end
+    }
+  )
+end
+
 
 local mainStyle = {
   window = {

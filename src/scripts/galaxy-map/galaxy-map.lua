@@ -149,6 +149,7 @@ function lotj.galaxyMap.setup()
   end
 
   lotj.setup.registerEventHandler("gmcp.Ship.System", lotj.galaxyMap.setShipGalCoords)
+  lotj.setup.registerEventHandler("gmcp.Room.Info", lotj.galaxyMap.setCurrentPlanet)
   -- This seems necessary when recreating the UI after upgrading the package.
   lotj.galaxyMap.container:raiseAll()
 end
@@ -167,6 +168,11 @@ function lotj.galaxyMap.setShipGalCoords()
     lotj.galaxyMap.currentY = gmcp.Ship.System.y
     lotj.galaxyMap.drawSystems()
   end
+end
+
+function lotj.galaxyMap.setCurrentPlanet()
+  if not gmcp.Room and gmcp.Room.Info then return end
+  lotj.galaxyMap.drawSystems()
 end
 
 local function container()
@@ -656,6 +662,7 @@ local function systemDisplayName(system)
 end
 
 function lotj.galaxyMap.drawSystems()
+  lotj.chat.debugLog("lotj.galaxyMap.drawSystems() call.")
   local minX, _, _, maxY = lotj.galaxyMap.coordRange()
   local xOffset, yOffset, pxPerCoord, pxPerCoordX = lotj.galaxyMap.calculateSizing()
 
@@ -850,9 +857,16 @@ function lotj.galaxyMap.drawSystems()
     local sysX = math.floor(xOffset + (system.x-minX)*pxPerCoordX - pointSize/2 + 0.5)
     local sysY = math.floor(yOffset + (maxY-system.y)*pxPerCoord - pointSize/2 + 0.5)
     point:move(sysX, sysY)
-    if system.x == lotj.galaxyMap.currentX and system.y == lotj.galaxyMap.currentY then
+    local stylePointFlag = false
+    for _, planetName in ipairs(system.planets) do
+      if gmcp.Room and gmcp.Room.Info and gmcp.Room.Info.planet and gmcp.Room.Info.planet == planetName then
+        stylePoint(point, system.gov, true, planetImage, pointSize, system.manual, label)
+        stylePointFlag = true
+      end
+    end
+    if system.x == lotj.galaxyMap.currentX and system.y == lotj.galaxyMap.currentY and not stylePointFlag then
       stylePoint(point, system.gov, true, planetImage, pointSize, system.manual, label)
-    else
+    elseif not stylePointFlag then
       stylePoint(point, system.gov, false, planetImage, pointSize, system.manual, label)
     end
 
