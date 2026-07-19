@@ -227,13 +227,15 @@ function lotj.mapper.startMapping(areaName)
   end
 
   local areaTable = getAreaTable()
-  if areaTable[areaName] == nil then
+  local currentArea = getRoomArea(lotj.mapper.current.vnum)
+  if areaTable[areaName] == nil and not table.contains(areaTable, currentArea) then
     addAreaName(areaName)
     lotj.mapper.log("Mapping in new area <yellow>"..areaName.."<reset>.")
   else
+    areaName = getRoomAreaName(currentArea)
     lotj.mapper.log("Mapping in existing area <yellow>"..areaName.."<reset>.")
   end
-  
+
   lotj.mapper.mappingArea = areaName
   lotj.mapper.lastMoveDirs = {}
   lotj.mapper.processCurrentRoom()
@@ -624,7 +626,7 @@ function lotj.mapper.onEnterRoom()
     lotj.mapper.startMapping()
   end
 
-  -- If the new room has has a planet different than the last one and we don't have
+  -- If the new room has a planet different than the last one and we don't have
   -- an area for that planet yet, give a prompt about how to start mapping it.
   if lotj.mapper.current.planet then
     if lotj.mapper.last and lotj.mapper.last.planet ~= lotj.mapper.current.planet then
