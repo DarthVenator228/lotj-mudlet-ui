@@ -172,7 +172,12 @@ end
 
 function lotj.galaxyMap.setCurrentPlanet()
   if not gmcp.Room and gmcp.Room.Info then return end
-  lotj.galaxyMap.drawSystems()
+  if lotj.galaxyMap.currentPlanet ~= gmcp.Room.Info.planet then
+    lotj.galaxyMap.currentPlanet = gmcp.Room.Info.planet
+    lotj.galaxyMap.currentX = nil
+    lotj.galaxyMap.currentY = nil
+    lotj.galaxyMap.drawSystems()
+  end
 end
 
 local function container()
@@ -858,6 +863,7 @@ function lotj.galaxyMap.drawSystems()
     local sysY = math.floor(yOffset + (maxY-system.y)*pxPerCoord - pointSize/2 + 0.5)
     point:move(sysX, sysY)
     local stylePointFlag = false
+    system.planets = system.planets or {}
     for _, planetName in ipairs(system.planets) do
       if gmcp.Room and gmcp.Room.Info and gmcp.Room.Info.planet and gmcp.Room.Info.planet == planetName then
         stylePoint(point, system.gov, true, planetImage, pointSize, system.manual, label)
