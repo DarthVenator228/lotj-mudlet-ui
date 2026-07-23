@@ -150,6 +150,7 @@ function lotj.galaxyMap.setup()
 
   lotj.setup.registerEventHandler("gmcp.Ship.System", lotj.galaxyMap.setShipGalCoords)
   lotj.setup.registerEventHandler("gmcp.Room.Info", lotj.galaxyMap.setCurrentPlanet)
+  lotj.setup.registerEventHandler("sysDisconnectionEvent", lotj.galaxyMap.clearCurrentXY)
   -- This seems necessary when recreating the UI after upgrading the package.
   lotj.galaxyMap.container:raiseAll()
 end
@@ -170,9 +171,17 @@ function lotj.galaxyMap.setShipGalCoords()
   end
 end
 
+function lotj.galaxyMap.clearCurrentXY()
+  lotj.galaxyMap.currentX = nil
+  lotj.galaxyMap.currentY= nil
+end
+
 function lotj.galaxyMap.setCurrentPlanet()
   if not gmcp.Room and gmcp.Room.Info then return end
-  lotj.galaxyMap.drawSystems()
+  if not lotj.galaxyMap.currentPlanet or lotj.galaxyMap.currentPlanet ~= gmcp.Room.Info.planet then
+    lotj.galaxyMap.currentPlanet = gmcp.Room.Info.planet
+    lotj.galaxyMap.drawSystems()
+  end
 end
 
 local function container()
