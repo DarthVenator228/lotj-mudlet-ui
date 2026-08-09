@@ -404,21 +404,6 @@ elseif os == "windows" then
   )
 end
 
--- Apply OS dependent settings
-local function applyOSSettings()
-  local OS = getOS()
-  if OS == "linux" then
-    disableKey("lotj-ui_retreat-windows")
-  elseif OS == "windows" then
-    disableKey("lotj-ui_retreat-linux")
-  else
-    disableKey("lotj-ui_retreat-linux")
-    disableKey("lotj-ui_retreat-windows")
-  end
-end
-
-lotj.setup.registerEventHandler("lotjUiLoaded", applyOSSettings)
-
 local mainStyle = {
   window = {
     width = "100%",
@@ -456,6 +441,20 @@ local secondaryStyle = {
 }
 
 function lotj.settings.setup()
+  -- Apply OS dependent settings
+  local function applyOSSettings()
+    local OS = getOS()
+    if OS == "linux" then
+      disableKey("lotj-ui_retreat-windows")
+    elseif OS == "windows" then
+      disableKey("lotj-ui_retreat-linux")
+    else
+      disableKey("lotj-ui_retreat-linux")
+      disableKey("lotj-ui_retreat-windows")
+    end
+  end
+  lotj.setup.registerEventHandler("lotjUiLoaded", applyOSSettings)
+
   lotj.configWindow = {}
   lotj.configWindow = ModernConfigManager:new(primaryConfigDefinition, { style = mainStyle })
 
