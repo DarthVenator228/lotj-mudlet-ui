@@ -1,5 +1,39 @@
 [
   {
+    "name": "dark-room",
+    "patterns": [
+      {
+        "pattern": "^It is pitch black ... $",
+        "type": "regex"
+      }
+    ],
+    "script": "lotj.mapper.enterDarkRoom()"
+  },
+  {
+    "name": "enter-ship",
+    "patterns": [
+      {
+        "pattern": "^You enter .+ '(?<ship_name>.+)'\\.$",
+        "type": "regex"
+      },
+      {
+        "pattern": "^You step through the hatchway of .+ '(?<ship_name>.+)'\\.$",
+        "type": "regex"
+      }
+    ],
+    "script": "lotj.mapper.setCurrentShipName(matches.ship_name)"
+  },
+  {
+    "name": "exit-ship",
+    "patterns": [
+      {
+        "pattern": "^You exit the ship\\.$",
+        "type": "regex"
+      }
+    ],
+    "script": "lotj.mapper.setCurrentShipName(nil)"
+  },
+  {
     "name": "room-amenities",
     "patterns": [
       {

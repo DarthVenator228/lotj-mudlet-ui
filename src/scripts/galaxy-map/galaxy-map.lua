@@ -8,13 +8,11 @@ end
 
 lotj = lotj or {}
 lotj.galaxyMap = lotj.galaxyMap or {
-  data = {
-    labelAsPlanets = true,
-    systems = {},
-    planets = {},
-    govToColor = {
-      ["Neutral Government"] = "#AAAAAA",
-    },
+  systems = {},
+  recorded = {},
+  governments = {},
+  govToColor = {
+    ["A Neutral Government"] = "#AAAAAA",
   },
   -- Map specific planets to specific images
   planetToImageMap = {
@@ -49,21 +47,29 @@ lotj.galaxyMap = lotj.galaxyMap or {
   }
 }
 
-local dataFileName = getMudletHomeDir().."/galaxyMap"
+local manualDataFileName = getMudletHomeDir().."/galaxyMap_manual"
+local gmcpDataFileName = getMudletHomeDir().."/galaxyMap_gmcp"
+
+-- Load recorded data
+if io.exists(manualDataFileName) then
+  table.load(manualDataFileName, lotj.galaxyMap.recorded)
+end
 
 -- Right-click menu configuration
 local rightClickMenuConfig = {
   Style = "Dark",
-  MenuWidth1 = 180,
-  MenuFormat1 = "c11",
-  MenuStyle1 = [[
+  MenuWidth = 30 * calcFontSize(getFontSize(), getFont()),
+  MenuFormat = "c"..tostring(getFontSize()),
+  MenuStyle = [[
     QLabel::hover {
       background-color: rgba(0,180,180,100%);
       color: white;
+      font-family: ]]..getFont()..[[;
     }
     QLabel::!hover {
       color: cyan;
       background-color: rgba(20,40,50,100%);
+      font-family: ]]..getFont()..[[;
     }
   ]]
 }
@@ -80,20 +86,6 @@ function lotj.galaxyMap.setup()
   lotj.galaxyMap.container:setStyleSheet([[
     border-image: url(]]..file..[[)
   ]])
-
-  lotj.galaxyMap.refreshButton = Geyser.Label:new({
-    name = "galaxyMapRefresh",
-    x = "20%", y = "35%",
-    width = "60%", height = 40,
-  }, lotj.galaxyMap.container)
-  lotj.galaxyMap.refreshButton:setStyleSheet([[
-    background-color: grey;
-    border: 1px solid white;
-  ]])
-  lotj.galaxyMap.refreshButton:echo("Click here to populate this map.", "white", "c14")
-  lotj.galaxyMap.refreshButton:setClickCallback(function()
-    expandAlias("gmap refresh", false)
-  end)
 
   -- Add button for manually adding systems
   local buttonSize = getFontSize() * 2.7
@@ -114,22 +106,16 @@ function lotj.galaxyMap.setup()
       border: 2px solid #00dddd;
     }
   ]])
+  lotj.galaxyMap.addButton:setCursor("PointingHand")
   lotj.galaxyMap.addButton:echo("+", "white", "c20")
-  lotj.galaxyMap.addButton:setClickCallback("lotj.galaxyMap.showAddSystemDialog")
-
-  disableTrigger("galaxy-map-refresh")
-  if io.exists(dataFileName) then
-    table.load(dataFileName, lotj.galaxyMap.data)
-    lotj.galaxyMap.log("Loaded map data.")
-    lotj.galaxyMap.drawSystems()
-  end
+  lotj.galaxyMap.addButton:setClickCallback(lotj.galaxyMap.showAddSystemDialog)
 
   lotj.setup.registerEventHandler("gmcp.Ship.System", lotj.galaxyMap.setShipGalCoords)
+  lotj.setup.registerEventHandler("gmcp.Room.Info", lotj.galaxyMap.setCurrentPlanet)
+  lotj.setup.registerEventHandler("gmcp.Galaxy.Systems", lotj.galaxyMap.drawSystems)
   -- This seems necessary when recreating the UI after upgrading the package.
   lotj.galaxyMap.container:raiseAll()
 end
-
-
 
 function lotj.galaxyMap.log(text)
   cecho("[<cyan>LOTJ Galaxy Map<reset>] "..text.."\n")
@@ -137,9 +123,20 @@ end
 
 function lotj.galaxyMap.setShipGalCoords()
   if not gmcp.Ship then return end
+  if not gmcp.Ship.System then return end
   if gmcp.Ship.System.x ~= nil and gmcp.Ship.System.y ~= nil then
     lotj.galaxyMap.currentX = gmcp.Ship.System.x
     lotj.galaxyMap.currentY = gmcp.Ship.System.y
+    lotj.galaxyMap.drawSystems()
+  end
+end
+
+function lotj.galaxyMap.setCurrentPlanet()
+  if not gmcp.Room and gmcp.Room.Info then return end
+  if lotj.galaxyMap.currentPlanet ~= gmcp.Room.Info.planet then
+    lotj.galaxyMap.currentPlanet = gmcp.Room.Info.planet
+    lotj.galaxyMap.currentX = nil
+    lotj.galaxyMap.currentY = nil
     lotj.galaxyMap.drawSystems()
   end
 end
@@ -148,72 +145,33 @@ local function container()
   return lotj.galaxyMap.container
 end
 
--- Fire off any showplanet commands we still need to run to load data for all known planets
-function lotj.galaxyMap.enqueuePendingRefreshCommands()
-  -- Try to send next basic command
-  for planet in pairs(gatherPlanetsState.pendingBasic) do
-    gatherPlanetsState.currentPlanet = planet
-    gatherPlanetsState.currentIsBasic = true
-    send("showplanet \""..planet.."\"", false)
-    gatherPlanetsState.pendingCommands = gatherPlanetsState.pendingCommands + 1
-    return
-  end
-
-  -- If no basic commands, try resources
-  for planet in pairs(gatherPlanetsState.pendingResources) do
-    gatherPlanetsState.currentPlanet = planet
-    gatherPlanetsState.currentIsBasic = false
-    send("showplanet \""..planet.."\" resources", false)
-    gatherPlanetsState.pendingCommands = gatherPlanetsState.pendingCommands + 1
-    return
-  end
-
-  -- We didn't have to retry any, so we're done getting info.
-  if gatherPlanetsState.pendingCommands == 0 then
-    disableTrigger("galaxy-map-refresh")
-    gatherPlanetsState.currentPlanet = nil
-    return
-  end
-
-  echo("\n")
-  lotj.galaxyMap.log("Enqueueing "..gatherPlanetsState.pendingCommands.." showplanet commands.")
-end
-
-function lotj.galaxyMap.resetData()
-  -- Preserve manually added systems
-  local manualSystems = {}
-  for name, system in pairs(lotj.galaxyMap.data.systems or {}) do
-    if system.manual then
-      manualSystems[name] = system
-    end
-  end
-
-  lotj.galaxyMap.data.planets = {}
-  lotj.galaxyMap.data.systems = manualSystems
-end
-
-local govColorIdx = 1
 local govColorList = {}
-table.insert(govColorList, "#E69F00")
 table.insert(govColorList, "#56B4E9")
 table.insert(govColorList, "#009E73")
-table.insert(govColorList, "#F0E442")
 table.insert(govColorList, "#D55E00")
+table.insert(govColorList, "#E69F00")
+table.insert(govColorList, "#F0E442")
 table.insert(govColorList, "#CC79A7")
 
-function lotj.galaxyMap.recordSystem(name, x, y, manual)
-  lotj.galaxyMap.data.systems = lotj.galaxyMap.data.systems or {}
-  lotj.galaxyMap.data.systems[name] = {
+function lotj.galaxyMap.recordSystem(name, x, y)
+  lotj.galaxyMap.recorded = lotj.galaxyMap.recorded or {}
+  lotj.galaxyMap.recorded[name] = {
+    planet = {
+      government = "A Neutral Government",
+      name = name
+    },
+    planets = {
+      {
+        government = "A Neutral Government",
+        name = name
+      },
+    },
     name = name,
-    planets = {},
-    gov = "Neutral Government",
     x = x,
     y = y,
-    manual = manual or false,
   }
-  table.save(dataFileName, lotj.galaxyMap.data)
 
-  lotj.galaxyMap.drawSystems()
+  table.save(manualDataFileName, lotj.galaxyMap.recorded)
 end
 
 -- Add a manual system with user-friendly feedback
@@ -236,12 +194,13 @@ function lotj.galaxyMap.addManualSystem(name, x, y)
     return false
   end
 
-  if lotj.galaxyMap.data.systems[name] then
+  if lotj.galaxyMap.recorded[name] or lotj.galaxyMap.systems[name] then
     lotj.galaxyMap.log("<yellow>System '"..name.."' already exists. Updating coordinates.")
   end
 
-  lotj.galaxyMap.recordSystem(name, x, y, true)
-  lotj.galaxyMap.log("<green>Added manual system '"..name.."' at ("..x..", "..y..")")
+  lotj.galaxyMap.recordSystem(name, x, y)
+  lotj.galaxyMap.drawSystems()
+  lotj.galaxyMap.log("<reset>Added system '<green>"..name.."<reset>' at (<green>"..x..", "..y.."<reset>)")
 
   return true
 end
@@ -249,10 +208,6 @@ end
 -- Show help text for gmap commands
 function lotj.galaxyMap.showHelp()
   lotj.galaxyMap.log("<cyan>Galaxy Map Commands:")
-  echo("\n")
-  cecho("  <yellow>gmap refresh<reset>\n")
-  cecho("    Refresh the galaxy map by gathering planet and system data from in-game.\n")
-  cecho("    <red>Notice:<reset> This will refresh all systems except manually added ones.\n")
   echo("\n")
   cecho("  <yellow>gmap add <system name> <x> <y><reset>\n")
   cecho("    Manually add a system to the galaxy map.\n")
@@ -264,6 +219,9 @@ function lotj.galaxyMap.showHelp()
   cecho("  <yellow>gmap remove <system name><reset>\n")
   cecho("    Remove a manually added system from the map.\n")
   cecho("    Example: <yellow>gmap remove \"Unknown System\"<reset>\n")
+  echo("\n")
+  cecho("  <yellow>gmap clear<reset>\n")
+  cecho("    Remove all manually added systems from the map.\n")
   echo("\n")
 end
 
@@ -284,6 +242,7 @@ function lotj.galaxyMap.showAddSystemDialog()
     background-color: rgba(0, 0, 0, 150);
   ]])
   lotj.galaxyMap.addDialogOverlay:raise()
+  lotj.galaxyMap.addDialogOverlay:setClickCallback(lotj.galaxyMap.closeAddSystemDialog)
 
   -- Create dialog box
   local dialogWidth = 400
@@ -304,21 +263,26 @@ function lotj.galaxyMap.showAddSystemDialog()
 
   -- Title
   local titleLabel = Geyser.Label:new({
+    name = "lotj_galaxyMap.titleLabel",
     x = "5%", y = 10,
     width = "90%", height = 30,
   }, lotj.galaxyMap.addDialog)
+  titleLabel:setStyleSheet(f"background-color: transparent; font-family: {getFont()}")
   titleLabel:echo("<center><b>Add System</b></center>", "white", "c18")
 
   -- Input row 1: System Name
   local inputHeight = 35
   local row1Y = 50
   local nameLabel = Geyser.Label:new({
+    name = "lotj_galaxyMap.nameLabel",
     x = 20, y = row1Y,
     width = 120, height = inputHeight,
   }, lotj.galaxyMap.addDialog)
+  nameLabel:setStyleSheet(f"background-color: transparent; font-family: {getFont()}")
   nameLabel:echo("System Name:", "white", "c12")
 
   lotj.galaxyMap.addDialog.nameInput = Geyser.CommandLine:new({
+    name = "lotj_galaxyMap.nameInput",
     x = 145, y = row1Y,
     width = 235, height = inputHeight,
   }, lotj.galaxyMap.addDialog)
@@ -332,12 +296,15 @@ function lotj.galaxyMap.showAddSystemDialog()
   -- Input row 2: X Coordinate
   local row2Y = 95
   local xLabel = Geyser.Label:new({
+    name = "lotj_galaxyMap.xLabel",
     x = 20, y = row2Y,
     width = 120, height = inputHeight,
   }, lotj.galaxyMap.addDialog)
+  xLabel:setStyleSheet(f"background-color: transparent; font-family: {getFont()}")
   xLabel:echo("X Coordinate:", "white", "c12")
 
   lotj.galaxyMap.addDialog.xInput = Geyser.CommandLine:new({
+    name = "lotj_galaxyMap.xInput",
     x = 145, y = row2Y,
     width = 235, height = inputHeight,
   }, lotj.galaxyMap.addDialog)
@@ -351,12 +318,15 @@ function lotj.galaxyMap.showAddSystemDialog()
   -- Input row 3: Y Coordinate
   local row3Y = 140
   local yLabel = Geyser.Label:new({
+    name = "lotj_galaxyMap.yLabel",
     x = 20, y = row3Y,
     width = 120, height = inputHeight,
   }, lotj.galaxyMap.addDialog)
+  yLabel:setStyleSheet(f"background-color: transparent; font-family: {getFont()}")
   yLabel:echo("Y Coordinate:", "white", "c12")
 
   lotj.galaxyMap.addDialog.yInput = Geyser.CommandLine:new({
+    name = "lotj_galaxyMap.yInput",
     x = 145, y = row3Y,
     width = 235, height = inputHeight,
   }, lotj.galaxyMap.addDialog)
@@ -374,6 +344,7 @@ function lotj.galaxyMap.showAddSystemDialog()
 
   -- Cancel button
   local cancelButton = Geyser.Label:new({
+    name = "lotj_galaxyMap.cancelButton",
     x = 40, y = buttonY,
     width = buttonWidth, height = buttonHeight,
   }, lotj.galaxyMap.addDialog)
@@ -381,22 +352,33 @@ function lotj.galaxyMap.showAddSystemDialog()
     background-color: #444444;
     border: 1px solid #666666;
     border-radius: 3px;
+    font-family: ]]..getFont()..[[;
   ]])
   cancelButton:echo("<center><b>Cancel</b></center>", "white", "c14")
-  cancelButton:setClickCallback("lotj.galaxyMap.closeAddSystemDialog")
+  cancelButton:setCursor("PointingHand")
+  cancelButton:setClickCallback(lotj.galaxyMap.closeAddSystemDialog)
 
   -- Add System button
   local addButton = Geyser.Label:new({
+    name = "lotj_galaxyMap.addButton",
     x = 240, y = buttonY,
     width = buttonWidth, height = buttonHeight,
   }, lotj.galaxyMap.addDialog)
   addButton:setStyleSheet([[
-    background-color: #006666;
-    border: 1px solid #00aaaa;
-    border-radius: 3px;
+    QLabel {
+      background-color: #006666;
+      border: 1px solid #00aaaa;
+      border-radius: 3px;
+      font-family: ]]..getFont()..[[;
+    }
+    QLabel:hover {
+      background-color: rgba(0, 200, 200, 220);
+      border: 2px solid #00dddd;
+    }
   ]])
   addButton:echo("<center><b>Add System</b></center>", "white", "c14")
-  addButton:setClickCallback("lotj.galaxyMap.handleAddSystemSubmit")
+  addButton:setCursor("PointingHand")
+  addButton:setClickCallback(lotj.galaxyMap.handleAddSystemSubmit)
   lotj.galaxyMap.addDialog:raiseAll()
 end
 
@@ -446,12 +428,7 @@ end
 
 -- List all manually added systems
 function lotj.galaxyMap.listManualSystems()
-  local manualSystems = {}
-  for name, system in pairs(lotj.galaxyMap.data.systems or {}) do
-    if system.manual then
-      table.insert(manualSystems, system)
-    end
-  end
+  local manualSystems = lotj.galaxyMap.recorded
 
   if #manualSystems == 0 then
     lotj.galaxyMap.log("No manually added systems found.")
@@ -464,64 +441,34 @@ function lotj.galaxyMap.listManualSystems()
   end
 end
 
+-- Remove all manually added systems
+function lotj.galaxyMap.clearManualSystems()
+  local count = #lotj.galaxyMap.recorded
+  if count == 0 then
+    lotj.galaxyMap.log("No manually added systems to remove.")
+    return
+  end
+  for name, system in pairs(lotj.galaxyMap.recorded or {}) do
+    lotj.galaxyMap.recorded[name] = nil
+  end
+  table.save(manualDataFileName, lotj.galaxyMap.recorded)
+  lotj.galaxyMap.drawSystems()
+  lotj.galaxyMap.log("<reset>Removed <red>" .. count .. " <reset>manually added system" .. (count == 1 and "" or "s") .. ".")
+end
+
 -- Remove a manually added system
 function lotj.galaxyMap.removeManualSystem(name)
-  if not lotj.galaxyMap.data.systems[name] then
+  if not lotj.galaxyMap.recorded[name] then
     lotj.galaxyMap.log("<red>System '"..name.."' not found.")
     return false
   end
 
-  if not lotj.galaxyMap.data.systems[name].manual then
-    lotj.galaxyMap.log("<red>System '"..name.."' is not a manually added system. Only manual systems can be removed.")
-    return false
-  end
-
-  lotj.galaxyMap.data.systems[name] = nil
-  table.save(dataFileName, lotj.galaxyMap.data)
+  lotj.galaxyMap.recorded[name] = nil
+  table.save(manualDataFileName, lotj.galaxyMap.recorded)
   lotj.galaxyMap.drawSystems()
 
-  lotj.galaxyMap.log("<green>Removed manual system '"..name.."'")
+  lotj.galaxyMap.log("<reset>Removed system '<red>"..name.."<reset>'")
   return true
-end
-
-function lotj.galaxyMap.recordPlanet(planetData)
-  if not lotj.galaxyMap.data.planets[planetData.name] then
-    lotj.galaxyMap.data.planets[planetData.name] = {
-      name = planetData.name,
-      gov = planetData.gov,
-      system = planetData.system,
-    }
-
-    local system = lotj.galaxyMap.data.systems[planetData.system]
-    if system ~= nil then
-      system.gov = planetData.gov
-      table.insert(system.planets, planetData.name)
-    else
-      lotj.galaxyMap.log("Unable to find system "..planetData.system.." for planet "..planetData.name.."\n")
-    end
-
-    if lotj.galaxyMap.data.govToColor[planetData.gov] == nil then
-      govColorIdx = govColorIdx+1
-      lotj.galaxyMap.data.govToColor[planetData.gov] = govColorList[govColorIdx]
-    end
-  end
-
-  if planetData.coords ~= nil then
-    lotj.galaxyMap.data.planets[planetData.name].coords = planetData.coords
-  end
-  if planetData.freeport ~= nil then
-    lotj.galaxyMap.data.planets[planetData.name].freeport = planetData.freeport
-  end
-  if planetData.taxRate ~= nil then
-    lotj.galaxyMap.data.planets[planetData.name].taxRate = planetData.taxRate
-  end
-  if planetData.resources ~= nil then
-    lotj.galaxyMap.data.planets[planetData.name].resources = planetData.resources
-  end
-
-  table.save(dataFileName, lotj.galaxyMap.data)
-
-  lotj.galaxyMap.drawSystems()
 end
 
 local systemPointSize = 32  -- Size of planet images
@@ -569,7 +516,7 @@ local function stylePoint(point, gov, currentSystem, planetImage, pointSize, man
     end
   else
     -- Fall back to old colored circular dot rendering
-    local backgroundColor = lotj.galaxyMap.data.govToColor[gov] or "#AAAAAA"
+    local backgroundColor = lotj.galaxyMap.govToColor[gov] or "#AAAAAA"
     local borderStyle = ""
     if currentSystem then
       borderStyle = "border: 2px solid red;"
@@ -585,29 +532,72 @@ local function stylePoint(point, gov, currentSystem, planetImage, pointSize, man
   end
 end
 
-local function systemDisplayName(system)
-  if lotj.galaxyMap.data.labelAsPlanets and #(system.planets or {}) > 0 then
-    local labelString = ""
-    for _, planet in ipairs(system.planets) do
-      if #labelString > 0 then
-        labelString = labelString..", "
-      end
-      labelString = labelString..planet
+function lotj.galaxyMap.getSystemName(systemName, system)
+  for planetName, planet in pairs(system) do
+    if type(planet) == "table" and planet.government then
+      system.name = planetName
+      return planet
     end
-    return labelString
-  else
-    -- Cut off common extra words from the system name to keep labels short
-    local labelString = system.name
-    labelString = string.gsub(labelString, " System$", "")
-    labelString = string.gsub(labelString, " Sector$", "")
-    return labelString
   end
+  system.name = systemName:match("[%w']+")
+  return { government = "A Neutral Government"}
 end
 
+function lotj.galaxyMap.getSystemPlanets(system)
+  local planets = {}
+  for planetName, planet in pairs(system) do
+    if type(planet) == "table" and planet.government then
+      planet.name = planetName
+      table.insert(planets, table.deepcopy(planet))
+    end
+  end
+  return planets
+end
+
+-- TODO:
+-- Even if there is no GMCP data, we should still draw the player's location
 function lotj.galaxyMap.drawSystems()
+  if lotj.layout and lotj.layout.upperRightTabData and lotj.layout.upperRightTabData.selectedTab ~= "galaxy" then
+    lotj.galaxyMap.pendingDraw = true
+    return
+  end
+  lotj.galaxyMap.pendingDraw = false
+
+  local gmcp_data = gmcpVarByPath("Galaxy.Systems") or {}
+  if next(gmcp_data) == nil then
+    if not io.exists(gmcpDataFileName) then
+      return
+    end
+    table.load(gmcpDataFileName, gmcp_data)
+  else
+    table.save(gmcpDataFileName, gmcp_data)
+  end
+
+  -- Create a System -> Planets hierarchy
+  lotj.galaxyMap.systems = {}
+  lotj.galaxyMap.governments = {}
+  lotj.galaxyMap.govToColor = {}
+
+  for systemName, system in pairs(gmcp_data) do
+    system.planets = lotj.galaxyMap.getSystemPlanets(system)
+    system.planet = lotj.galaxyMap.getSystemName(systemName, system)
+    lotj.galaxyMap.systems[systemName] = system
+    lotj.galaxyMap.governments[system.planet.government] = true
+  end
+
+  -- Establish government colors
+  lotj.galaxyMap.govToColor["A Neutral Government"] = "#AAAAAA"
+  local flag = 1
+  for gov, _ in pairs(lotj.galaxyMap.governments) do
+    if gov ~= "A Neutral Government" then
+      lotj.galaxyMap.govToColor[gov] = govColorList[flag]
+      flag = flag + 1
+    end
+  end
+
   local minX, _, _, maxY = lotj.galaxyMap.coordRange()
   local xOffset, yOffset, pxPerCoord, pxPerCoordX = lotj.galaxyMap.calculateSizing()
-  
+
   lotj.galaxyMap.systemPoints = lotj.galaxyMap.systemPoints or {}
   for _, point in pairs(lotj.galaxyMap.systemPoints) do
     point:hide()
@@ -618,30 +608,46 @@ function lotj.galaxyMap.drawSystems()
     label:hide()
   end
 
-  
   local foundCurrentLocation = false
   local systemsToDraw = {}
-  for _, system in pairs(lotj.galaxyMap.data.systems) do
-    table.insert(systemsToDraw, system)
+
+  -- Add systems from gmcp to systems to draw
+  for _, system in pairs(lotj.galaxyMap.systems) do
+    -- Ignore special systems placed at nonsensical locations
+    if not lotj.galaxyMap.outOfBounds(system) then
+      table.insert(systemsToDraw, table.deepcopy(system))
+      if system.x == lotj.galaxyMap.currentX and system.y == lotj.galaxyMap.currentY then
+        foundCurrentLocation = true
+      end
+    end
+  end
+
+  -- Add the recorded systems to systems to draw
+  for _, system in pairs(lotj.galaxyMap.recorded) do
+    system.manual = true
+    table.insert(systemsToDraw, table.deepcopy(system))
     if system.x == lotj.galaxyMap.currentX and system.y == lotj.galaxyMap.currentY then
       foundCurrentLocation = true
     end
   end
+
+  -- If our current location is not in any known system, add it as a custom point
   if not foundCurrentLocation and lotj.galaxyMap.currentX and lotj.galaxyMap.currentY then
     table.insert(systemsToDraw, {
+      planet = {
+        ["Current"] = {
+          government = "A Neutral Government",
+          name = "Current"
+        },
+      },
+      planets = {},
       name = "Current",
+      manual = true,
       x = lotj.galaxyMap.currentX,
       y = lotj.galaxyMap.currentY
     })
   end
 
-  -- Hide or show the refresh button accordingly, based on whether we have any data.
-  if #systemsToDraw > 0 then
-    lotj.galaxyMap.refreshButton:hide()
-  else
-    lotj.galaxyMap.refreshButton:show()
-  end
-  
   -- Initialize planet image assignments if needed
   lotj.galaxyMap.planetImages = lotj.galaxyMap.planetImages or {}
 
@@ -653,16 +659,6 @@ function lotj.galaxyMap.drawSystems()
       -- First check if the system name itself matches a planet mapping
       if lotj.galaxyMap.planetToImageMap[system.name] then
         mappedImage = getMudletHomeDir().."/@PKGNAME@/"..lotj.galaxyMap.planetToImageMap[system.name]
-      end
-
-      -- If not, check if any planet in this system has a specific mapping
-      if not mappedImage and system.planets then
-        for _, planetName in ipairs(system.planets) do
-          if lotj.galaxyMap.planetToImageMap[planetName] then
-            mappedImage = getMudletHomeDir().."/@PKGNAME@/"..lotj.galaxyMap.planetToImageMap[planetName]
-            break
-          end
-        end
       end
 
       -- Store mapped image if found
@@ -677,22 +673,23 @@ function lotj.galaxyMap.drawSystems()
 
     local point = lotj.galaxyMap.systemPoints[system.name]
     if point == nil then
-      point = Geyser.Label:new({width=pointSize, height=pointSize}, container())
-      stylePoint(point, system.gov, false, planetImage, pointSize)
+      point = Geyser.Label:new({name="galaxyMap_"..system.name, width=pointSize, height=pointSize}, container())
+      stylePoint(point, system.planet.government, false, planetImage, pointSize)
       lotj.galaxyMap.systemPoints[system.name] = point
     else
       point:show()
     end
+    point:raise()
 
     -- Build menu items based on system properties
     local menuItems = {"Calculate Route"}
 
     -- Add planet info options if system has planets
-    if system.planets and #system.planets > 0 then
-      for _, planetName in ipairs(system.planets) do
-        table.insert(menuItems, "Show "..planetName.." Info")
-        table.insert(menuItems, "Show "..planetName.." Resources")
-        table.insert(menuItems, "Show "..planetName.." AI")
+    if system.planets and #system.planets > 0  and system.manual ~= true then
+      for _, planet in ipairs(system.planets) do
+        table.insert(menuItems, "Show "..planet.name.." Info")
+        table.insert(menuItems, "Show "..planet.name.." Resources")
+        table.insert(menuItems, "Show "..planet.name.." AI")
       end
     end
 
@@ -705,9 +702,9 @@ function lotj.galaxyMap.drawSystems()
     local menuConfig = {
       MenuItems = menuItems,
       Style = rightClickMenuConfig.Style,
-      MenuWidth1 = rightClickMenuConfig.MenuWidth1,
-      MenuFormat1 = rightClickMenuConfig.MenuFormat1,
-      MenuStyle1 = rightClickMenuConfig.MenuStyle1
+      MenuWidth = rightClickMenuConfig.MenuWidth,
+      MenuFormat = rightClickMenuConfig.MenuFormat,
+      MenuStyle = rightClickMenuConfig.MenuStyle
     }
     point:createRightClickMenu(menuConfig)
 
@@ -719,22 +716,22 @@ function lotj.galaxyMap.drawSystems()
     end)
 
     -- Set actions for planet-specific options
-    if system.planets and #system.planets > 0 then
-      for _, planetName in ipairs(system.planets) do
-        point:setMenuAction("Show "..planetName.." Info", function()
-          send("showplanet \""..planetName.."\"")
+    if system.planets and #system.planets > 0 and system.manual ~= true then
+      for _, planet in ipairs(system.planets) do
+        point:setMenuAction("Show "..planet.name.." Info", function()
+          send("showplanet \""..planet.name.."\"")
           --closeAllLevels(point)
           closeAllLevels(point.rightClickMenu)
         end)
 
-        point:setMenuAction("Show "..planetName.." Resources", function()
-          send("showplanet \""..planetName.."\" resources")
+        point:setMenuAction("Show "..planet.name.." Resources", function()
+          send("showplanet \""..planet.name.."\" resources")
           --closeAllLevels(point)
           closeAllLevels(point.rightClickMenu)
         end)
 
-        point:setMenuAction("Show "..planetName.." AI", function()
-          send("showplanet \""..planetName.."\" ai")
+        point:setMenuAction("Show "..planet.name.." AI", function()
+          send("showplanet \""..planet.name.."\" ai")
           --closeAllLevels(point)
           closeAllLevels(point.rightClickMenu)
         end)
@@ -750,16 +747,17 @@ function lotj.galaxyMap.drawSystems()
     end
 
     local label = lotj.galaxyMap.systemLabels[system.name]
-    local labelText = systemDisplayName(system)
+    labelText = system.name
     local fontSize = getFontSize() - 1
 
     -- Calculate approximate text width based on character count and font size
     -- Average character width is roughly 0.6 times the font size
-    local labelWidth = math.ceil(#labelText * fontSize * 0.75)
+    local labelWidth = math.ceil(#labelText * fontSize * 0.8)
     local labelHeight = math.ceil(getFontSize()*1.33)
 
     if label == nil then
       label = Geyser.Label:new({
+        name = "lotj.galaxyMap.drawSystems.label_"..system.name,
         height = labelHeight,
         width = labelWidth,
         fillBg = 0,
@@ -776,8 +774,9 @@ function lotj.galaxyMap.drawSystems()
     end
 
     -- Use government color for the label
-    local labelColor = lotj.galaxyMap.data.govToColor[system.gov] or "#AAAAAA"
+    local labelColor = lotj.galaxyMap.govToColor[system.planet.government] or "#AAAAAA"
     label:echo(labelText, labelColor, fontSize.."c")
+    label:raise()
 
     -- Add hover effect for manually added systems
     if system.manual then
@@ -799,10 +798,18 @@ function lotj.galaxyMap.drawSystems()
     local sysX = math.floor(xOffset + (system.x-minX)*pxPerCoordX - pointSize/2 + 0.5)
     local sysY = math.floor(yOffset + (maxY-system.y)*pxPerCoord - pointSize/2 + 0.5)
     point:move(sysX, sysY)
-    if system.x == lotj.galaxyMap.currentX and system.y == lotj.galaxyMap.currentY then
-      stylePoint(point, system.gov, true, planetImage, pointSize, system.manual, label)
-    else
-      stylePoint(point, system.gov, false, planetImage, pointSize, system.manual, label)
+    local stylePointFlag = false
+    -- system.planets = system.planets or {}
+    for _, planet in ipairs(system.planets) do
+      if gmcp.Room and gmcp.Room.Info and gmcp.Room.Info.planet and gmcp.Room.Info.planet == planet.name then
+        stylePoint(point, system.planet.government, true, planetImage, pointSize, system.manual, label)
+        stylePointFlag = true
+      end
+    end
+    if system.x == lotj.galaxyMap.currentX and system.y == lotj.galaxyMap.currentY and not stylePointFlag then
+      stylePoint(point, system.planet.government, true, planetImage, pointSize, system.manual, label)
+    elseif not stylePointFlag then
+      stylePoint(point, system.planet.government, false, planetImage, pointSize, system.manual, label)
     end
 
     -- Center the label under the planet
@@ -838,22 +845,30 @@ function lotj.galaxyMap.coordRange()
   local maxX = 0
   local minY = 0
   local maxY = 0
-  
-  for _, system in pairs(lotj.galaxyMap.data.systems) do
-    if minX > system.x then
-      minX = system.x
-    end
-    if maxX < system.x then
-      maxX = system.x
-    end
-    if minY > system.y then
-      minY = system.y
-    end
-    if maxY < system.y then
-      maxY = system.y
+
+  for _, system in pairs(lotj.galaxyMap.systems) do
+    if not lotj.galaxyMap.outOfBounds(system) then
+      if minX > system.x then
+        minX = system.x
+      end
+      if maxX < system.x then
+        maxX = system.x
+      end
+      if minY > system.y then
+        minY = system.y
+      end
+      if maxY < system.y then
+        maxY = system.y
+      end
     end
   end
-  
+
   -- Pad all values by 10 to ensure points are displayed reasonably.
   return minX-10, maxX+10, minY-10, maxY+10
+end
+
+-- Determine whether we should ignore a system. This is mostly to catch weird imm planets way
+-- off the map so they don't throw off the map layout.
+function lotj.galaxyMap.outOfBounds(system)
+  return system.x < -200 or system.x > 200 or system.y < -200 or system.y > 200
 end

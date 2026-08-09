@@ -1,3 +1,4 @@
+---@diagnostic disable: deprecated
 lotj = lotj or {}
 lotj.systemMap = lotj.systemMap or {
   mapRange = 2000,
@@ -10,27 +11,118 @@ local labelWidth = 200
 local labelHeight = 16
 
 local controlButtonStyle = [[
-  background-color: grey;
-  border: 2px solid white;
+  QLabel {
+    background-color: rgba(0,0,0,100%);
+    border: 2px solid rgb(0, 246, 0);
+    border-radius: 8px;
+  }
+    QLabel::hover {
+      background-color: rgba(0,246,0,40%);
+      color: white;
+    }
+    QLabel::!hover {
+      color: cyan;
+      background-color: rgba(0,246,0,10%);
+    }
 ]]
+
+local function generateRadarImage(path, size)
+  size = size or 256
+  local radius = size / 2
+  local cx, cy = radius, radius
+
+  local f = io.open(path, "w")
+  f:write("P3\n", size, " ", size, "\n255\n")
+
+  local spokes = 12
+  local spokeAngles = {}
+  for i = 0, spokes - 1 do
+    spokeAngles[i+1] = (i / spokes) * (2 * math.pi)
+  end
+
+  -- === Adjustable line thickness (in pixels) ===
+  local lineWidth = 4
+  local halfWidth = lineWidth / 2
+
+  for y = 0, size - 1 do
+    for x = 0, size - 1 do
+      local dx = x - cx
+      local dy = y - cy
+      local dist = math.sqrt(dx*dx + dy*dy)
+
+      local r,g,b = 0,0,0
+
+      if dist <= radius then
+        -- Glow
+        local t = 1 - (dist / radius)
+        local glow = math.floor(120 * (t ^ 3.2))
+        r, g, b = 0, glow, 0
+
+        -- === Rings (constant pixel thickness) ===
+        for i = 1,3 do
+          local rr = radius * (i/3)
+          if math.abs(dist - rr) <= halfWidth then
+            r, g, b = 0, 180, 0
+          end
+        end
+
+        -- === Spokes (convert pixel width → angular width) ===
+        if dist > 0 then
+          local angle = math.atan2(dy, dx)
+
+          for _,a in ipairs(spokeAngles) do
+            local diff = math.abs(math.atan2(math.sin(angle-a), math.cos(angle-a)))
+
+            -- convert pixel width to radians at this radius
+            local angularWidth = halfWidth / dist
+
+            if diff <= angularWidth then
+              r, g, b = 0, 160, 0
+              break
+            end
+          end
+        end
+      end
+
+      f:write(r, " ", g, " ", b, " ")
+    end
+    f:write("\n")
+  end
+
+  f:close()
+end
 
 function lotj.systemMap.setup()
   disableTrigger("system-map-radar")
 
+  if not io.exists(getMudletHomeDir().."/@PKGNAME@/radar.ppm") then
+    generateRadarImage(getMudletHomeDir().."/@PKGNAME@/radar.ppm", 1000)
+  end
+
   local tabContents = lotj.layout.upperRightTabData.contents["system"]
-  lotj.systemMap.container = Geyser.Label:new({}, tabContents)
-  lotj.systemMap.container:setStyleSheet([[
+  lotj.systemMap.background = Geyser.Label:new({name = "lotj.systemMap.background"}, tabContents)
+  lotj.systemMap.background:setStyleSheet([[
     background-color: black;
+  ]])
+  lotj.systemMap.background:move(0, 0)
+  lotj.systemMap.background:resize("100%", "100%")
+  lotj.systemMap.container = Geyser.Label:new({name = "lotj.systemMap.container"}, tabContents)
+  -- local bg_image = getMudletHomeDir().."/@PKGNAME@/radar.png"
+  local bg_image = getMudletHomeDir().."/@PKGNAME@/radar.ppm"
+  lotj.systemMap.container:setStyleSheet([[
+    background-color: rgba(0,0,0,0);
+    border-image: url(]]..bg_image..[[);
   ]])
   lotj.systemMap.resizeToSquare()
   lotj.setup.registerEventHandler("sysWindowResizeEvent", lotj.systemMap.resizeToSquare)
 
   local zoomInButton = Geyser.Label:new({
-    x = "2%", y = 10,
-    width = 28, height = 28,
+    x = "10%", y = "5%",
+    width = "6%", height = "8%",
   }, tabContents)
   zoomInButton:setStyleSheet(controlButtonStyle)
-  zoomInButton:echo("+", "white", "c16b")
+  zoomInButton:echo("+", "white", "c18b")
+  zoomInButton:setCursor("PointingHand")
   zoomInButton:setClickCallback(function()
     if lotj.systemMap.mapRange > 1000 then
       lotj.systemMap.mapRange = lotj.systemMap.mapRange - 1000
@@ -43,11 +135,12 @@ function lotj.systemMap.setup()
   end)
 
   local zoomOutButton = Geyser.Label:new({
-    x = "2%", y = 44,
-    width = 28, height = 28,
+    x = "2%", y = "5%",
+    width = "6%", height = "8%",
   }, tabContents)
   zoomOutButton:setStyleSheet(controlButtonStyle)
-  zoomOutButton:echo("-", "white", "c16b")
+  zoomOutButton:echo("-", "white", "c18b")
+  zoomOutButton:setCursor("PointingHand")
   zoomOutButton:setClickCallback(function()
     if lotj.systemMap.mapRange >= 1000 then
       lotj.systemMap.mapRange = lotj.systemMap.mapRange + 1000
@@ -60,21 +153,24 @@ function lotj.systemMap.setup()
   end)
 
   local refreshButton = Geyser.Label:new({
-    x = "2%", y = 78,
-    width = 28, height = 28,
+    x = "2%", y = "15%",
+    width = "14%", height = "8%",
   }, tabContents)
   refreshButton:setStyleSheet(controlButtonStyle)
-  refreshButton:echo("R", "white", "c16b")
+  refreshButton:echo("Radar", "white", "12c")
+  refreshButton:setCursor("PointingHand")
   refreshButton:setClickCallback(function()
     lotj.systemMap.maskNextRadarOutput = true
-    expandAlias("radar", false)
+    enableTrigger("system-map-radar")
+    send("radar", false)
   end)
 
 
-  local rangeCircle = rangeCircle or Geyser.Label:new({fillBg = 0}, lotj.systemMap.container)
+  rangeCircle = Geyser.Label:new({name = "lotj.systemMap.rangeCircle", fillBg = 0}, lotj.systemMap.container)
   rangeCircle:move(0, 0)
 
-  lotj.systemMap.rangeLabel = lotj.systemMap.rangeLabel or Geyser.Label:new({fillBg = 0}, lotj.systemMap.container)
+  lotj.systemMap.rangeLabel = Geyser.Label:new({name = "lotj.systemMap.rangeLabel", fillBg = 0}, lotj.systemMap.container)
+  lotj.systemMap.rangeLabel:setStyleSheet("background-color: rgba(0,0,0,0)")
   lotj.systemMap.rangeLabel:resize(50, 20)
   lotj.systemMap.rangeLabel:echo(lotj.systemMap.mapRange, "green", "10c")
 
@@ -131,7 +227,7 @@ function lotj.systemMap.drawMap()
 
   local drawnItems = {}
   for i, item in ipairs(itemsToDraw) do
-    local point, label = lotj.systemMap.pointAndLabel(i)
+    local point, label = lotj.systemMap.pointAndLabel(i, item)
 
     local color = "yellow"
     if item.class and string.match(item.class, "Pirated") then
@@ -268,10 +364,30 @@ end
 
 -- Return existing (or create new) Geyser labels for a given point and label
 -- We store and reuse these so that we don't accumulate infinite label objects, since Geyser doesn't give us a way to delete elements, only hide them
-function lotj.systemMap.pointAndLabel(idx)
-  lotj.systemMap.genPoints[idx] = lotj.systemMap.genPoints[idx] or Geyser.Label:new({}, lotj.systemMap.container)
-  lotj.systemMap.genLabels[idx] = lotj.systemMap.genLabels[idx] or Geyser.Label:new({fillBg = 0, width = labelWidth, height = labelHeight}, lotj.systemMap.container)
+function lotj.systemMap.pointAndLabel(idx, item)
+  lotj.systemMap.genPoints[idx] = lotj.systemMap.genPoints[idx] or Geyser.Label:new({name = "lotj.systemMap.genPoints_"..idx}, lotj.systemMap.container)
+  lotj.systemMap.genLabels[idx] = lotj.systemMap.genLabels[idx] or Geyser.Label:new({
+    name = "lotj.systemMap.genLabels_"..idx,
+    fillBg = 0,
+    height = math.ceil(getFontSize()*1.6), width = (lotj.systemMap.radarItemHandling(item) + 5) * 11 or labelWidth
+    }, lotj.systemMap.container
+  )
+  lotj.systemMap.genLabels[idx]:setStyleSheet([[
+    background-color: rgba(0,0,0,0);
+    font-family: ]] .. getFont() .. [[;
+  ]])
   return lotj.systemMap.genPoints[idx], lotj.systemMap.genLabels[idx]
+end
+
+function lotj.systemMap.radarItemHandling(item)
+  local output = ""
+  if item.class ~= nil then
+    output = output .. item.class
+  end
+  if item.name ~= nil then
+    output = output .. item.name 
+  end
+  return #output
 end
 
 -- Compute distance between one X/Y/Z coord and another
@@ -298,6 +414,7 @@ function lotj.systemMap.resizeToSquare()
   if contW >= contH then
     width = contH
     x = (contW-contH)/2
+    -- x = .33 * contW -- Uncomment to offset radar image
   else
     height = contW
     y = (contH-contW)/2

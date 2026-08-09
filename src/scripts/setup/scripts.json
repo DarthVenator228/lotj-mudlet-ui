@@ -4,5 +4,11 @@
   },
   {
     "name": "util"
+  },
+  {
+    "name": "modernConfigManager"
+  },
+  {
+    "name": "tutorial"
   }
 ]

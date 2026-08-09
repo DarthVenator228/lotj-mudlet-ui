@@ -1,2 +1,3 @@
 lotj.systemMap.maskNextRadarOutput = true
-expandAlias("radar", false)
+enableTrigger("system-map-radar")
+send("radar", false)

@@ -1,7 +1,9 @@
 mudlet = mudlet or {}; mudlet.mapper_script = true
 lotj = lotj or {}
 lotj.mapper = lotj.mapper or {}
+lotj.mapper.resumeMapping = true
 
+-- lotj.mapper.debug = true -- Disable for release
 
 local dirs = {}
 -- The order of these is important. The indices of the directions must match
@@ -80,11 +82,12 @@ local amenityEnvCodes = {
   },
   ["turbolift"] = {
     envCode = 263,
-    symbol = "T"
+    symbol = "T" -- 🛗
   },
 }
 
 local function trim(s)
+  if not s then return "" end
   return (s:gsub("^%s*(.-)%s*$", "%1"))
 end
 
@@ -109,7 +112,7 @@ function lotj.mapper.mapCommand(input)
   elseif cmd == "start" then
     lotj.mapper.startMapping(args)
   elseif cmd == "stop" then
-    lotj.mapper.stopMapping()
+    lotj.mapper.stopMapping(false)
   elseif cmd == "deletearea" then
     lotj.mapper.deleteArea(args)
   elseif cmd == "shift" then
@@ -118,8 +121,12 @@ function lotj.mapper.mapCommand(input)
     lotj.mapper.saveMap()
   elseif cmd == "setroomcoords" then
     lotj.mapper.setRoomCoords(args)
+  elseif cmd == "areas" then
+    lotj.mapper.printAreaList()
   elseif cmd == "search" then
     lotj.mapper.searchRooms(args)
+  elseif cmd == "purge" then
+    lotj.mapper.purgeAreas(args)
   else
     lotj.mapper.logError("Unknown map command. Try <yellow>map help<reset>.")
   end
@@ -160,17 +167,14 @@ function lotj.mapper.printHelp()
 
 <yellow>map start [<area name>]<reset>
 
-Begin mapping. Any new rooms you enter while mapping will be added to this area name, so you
-should be sure to stop mapping before entering a ship or moving to a different planet. No area
-name argument is required if you're on a planet, as we'll default to the planet name.
+Begin mapping. Any new rooms you enter while mapping will be added to this area name. No 
+area name argument is required if you're on a planet, as we'll default to the planet name.
 
 Some tips to remember:
  - Use a light while mapping. Entering a dark room where you can't see will not update the map.
  - Use <yellow>map shift<reset> to adjust room positioning, especially after going through turbolifts or
    voice-activated doors. It's faster to click-and-drag with the GUI to move large blocks of
    rooms, though.
- - Rooms in ships are all unique, even if they are the same model. In practice, mapping ships
-   really isn't supported yet, although platforms or ships you use frequently may be worth it.
 
 <yellow>map stop<reset>
 
@@ -189,14 +193,22 @@ Deletes all data for an area. There's no confirmation and no undo!
 Moves the current room in whichever direction you enter. Useful for adjusting placement of
 rooms when you need to space them out.
 
+<yellow>map areas<reset>
+
+Display a list of all areas in the map.
+
 <yellow>map search <room name><reset>
 
 Search for rooms by name in the current area. Results are displayed as clickable links
 that will trigger autowalk to that room. The search is case-insensitive and matches partial names.
+
+<yellow>map purge <number><reset>
+
+Delete areas from the map with less than or equal to the specified number of rooms.
 ]])
 
 
-  if gmcp.Char.Info.immLevel and gmcp.Char.Info.immLevel >= 102 then
+  if gmcpVarByPath("Char.Info.immLevel") and gmcpVarByPath("Char.Info.immLevel") >= 102 then
     cecho([[
 
 <yellow>map setroomcoords <area name><reset>
@@ -210,10 +222,15 @@ end
 
 
 function lotj.mapper.startMapping(areaName)
+  lotj.configTable.mappingArea = false
+  lotj.mapper.resumeMapping = false
   areaName = trim(areaName)
   if #areaName == 0 then
     if lotj.mapper.current and lotj.mapper.current.planet then
       areaName = lotj.mapper.current.planet
+    elseif lotj.mapper.cached_area then
+      areaName = lotj.mapper.cached_area
+      lotj.mapper.cached_area = nil
     else
       lotj.mapper.log("Syntax: map start <yellow><area name><reset>")
       return
@@ -226,27 +243,38 @@ function lotj.mapper.startMapping(areaName)
   end
 
   local areaTable = getAreaTable()
-  if areaTable[areaName] == nil then
+  local currentArea = getRoomArea(lotj.mapper.current.vnum)
+  if areaTable[areaName] == nil and not table.contains(areaTable, currentArea) then
     addAreaName(areaName)
     lotj.mapper.log("Mapping in new area <yellow>"..areaName.."<reset>.")
   else
+    if currentArea then
+      areaName = getRoomAreaName(currentArea)
+    end
     lotj.mapper.log("Mapping in existing area <yellow>"..areaName.."<reset>.")
   end
-  
+
   lotj.mapper.mappingArea = areaName
   lotj.mapper.lastMoveDirs = {}
   lotj.mapper.processCurrentRoom()
 end
 
 
-function lotj.mapper.stopMapping()
+function lotj.mapper.stopMapping(resumeMapping)
+  if resumeMapping then
+    lotj.mapper.resumeMapping = true
+  else
+    lotj.mapper.resumeMapping = false
+  end
+  lotj.configTable.mappingArea = false
+  lotj.mapper.lastMoveDirs = nil
+  lotj.mapper.saveMap()
   if lotj.mapper.mappingArea == nil then
     lotj.mapper.logError("Mapper not running.")
     return
   end
   lotj.mapper.mappingArea = nil
-  lotj.mapper.lastMoveDirs = nil
-  lotj.mapper.log("Mapping <red>stopped<reset>. Don't forget to <yellow>map save<reset>!")
+  lotj.mapper.log("Mapping stopped<reset>.")
 end
 
 
@@ -262,9 +290,9 @@ function lotj.mapper.deleteArea(areaName)
     lotj.mapper.logError("Area <yellow>"..areaName.."<reset> does not exist.")
     return
   end
-  
+
   if areaName == lotj.mapper.mappingArea then
-    lotj.mapper.stopMapping()
+    lotj.mapper.stopMapping(true)
   end
 
   deleteArea(areaName)
@@ -369,11 +397,21 @@ function lotj.mapper.handleSentCommand(event, cmd)
     return
   end
 
-  local dir = dirObj(trim(cmd))
+  cmd = trim(cmd)
+
+  local dir = dirObj(cmd)
   if dir ~= nil then
     lotj.mapper.lastMoveDirs = lotj.mapper.lastMoveDirs or {}
     table.insert(lotj.mapper.lastMoveDirs, dir)
     lotj.mapper.logDebug("Pushed movement dir: "..dir.long)
+    return
+  end
+
+  -- Stop mapper on hail with intent to resume
+  if cmd:match("^ha +.+$") or cmd:match("^hai +.+$") or cmd:match("^hail +.+$") then
+    lotj.mapper.logDebug("Hail command received, stopping mapper.")
+    lotj.mapper.stopMapping(true)
+    return
   end
 end
 
@@ -575,16 +613,33 @@ end
 -- The vnum is always sent after the name and exits, so we can use it as a trigger for
 -- handling movement to a new room
 function lotj.mapper.onEnterRoom()
-  lotj.mapper.logDebug("Handling entered room, vnum "..gmcp.Room.Info.vnum)
+  if not gmcp.Room.Info.vnum then return end
+  lotj.mapper.logDebug("Handling entered room, vnum " .. gmcp.Room.Info.vnum)
+
+  local flag = true
   if lotj.mapper.current ~= nil then
     lotj.mapper.last = lotj.mapper.current
+    flag = false
   end
+  lotj.mapper.current = lotj.mapper.current or {}
   lotj.mapper.current = {
     vnum = gmcp.Room.Info.vnum,
     name = gmcp.Room.Info.name:gsub("&.", ""),
     exits = gmcp.Room.Info.exits or {},
     planet = gmcp.Room.Info.planet,
+    ship = lotj.mapper.current.ship,
+    ship_name = lotj.mapper.currentShipName
   }
+  if flag then lotj.mapper.last = lotj.mapper.current end
+
+  -- Determine whether we are on a ship
+  if lotj.mapper.current.planet then
+    lotj.mapper.current.ship = false
+    lotj.mapper.currentShipName = nil
+    lotj.mapper.cached_area = nil
+  else
+    lotj.mapper.current.ship = true
+  end
 
   -- This room has coordinates set in the game which we should use.
   if gmcp.Room.Info.x ~= nil then
@@ -593,18 +648,127 @@ function lotj.mapper.onEnterRoom()
     lotj.mapper.current.z = gmcp.Room.Info.z
   end
 
-  -- If the new room has has a planet different than the last one and we don't have
+  local vnum = lotj.mapper.current.vnum
+  local room = lotj.mapper.getRoomByVnum(vnum)
+
+  if (not lotj.mapper.mappingArea and lotj.configTable and lotj.configTable.mappingArea) or (not lotj.mapper.mappingArea and lotj.mapper.resumeMapping) then
+    lotj.mapper.logDebug("Attempting to automatically resume the mapper.")
+    if room ~= nil then
+      -- Resume mapping from this room
+      lotj.mapper.logDebug("Resuming mapping from existing room.")
+      lotj.mapper.startMapping()
+    else
+      if lotj.mapper.cached_area then
+        lotj.mapper.logDebug("Resuming mapping from cached area: " .. lotj.mapper.cached_area)
+        lotj.mapper.startMapping(lotj.mapper.cached_area)
+      -- Cannot resume mapping from this room
+      else
+        lotj.mapper.logDebug("Cannot resume mapping from non-existent room.")
+      end
+    end
+    return
+  end
+
+  -- If the new room has a planet different than the last one and we don't have
   -- an area for that planet yet, give a prompt about how to start mapping it.
   if lotj.mapper.current.planet then
     if lotj.mapper.last and lotj.mapper.last.planet ~= lotj.mapper.current.planet then
-      if getAreaTable()[lotj.mapper.current.planet] == nil then
-        lotj.mapper.log("Welcome to <yellow>"..lotj.mapper.current.planet.."<reset>. "..
-          "To begin mapping this area as you explore, type <yellow>map start<reset>.")
-        echo("\n")
+      if lotj.mapper.mappingArea then
+        lotj.mapper.stopMapping(false)
+        lotj.mapper.startMapping()
+        return
+      else
+        if getAreaTable()[lotj.mapper.current.planet] == nil then
+          lotj.mapper.log("Welcome to <yellow>"..lotj.mapper.current.planet.."<reset>. "..
+            "To begin mapping this area as you explore, type <yellow>map start<reset>.")
+          echo("\n")
+        end
+        lotj.mapper.processCurrentRoom()
+        return
       end
     end
   end
-  
+
+  -- We are on a ship
+  if lotj.mapper.current.ship then
+    -- We came from a ship room
+    if lotj.mapper.last.ship then
+      -- We boarded another ship
+      if lotj.mapper.current.ship_name ~= lotj.mapper.last.ship_name then
+        -- We are mapping
+        if lotj.mapper.mappingArea then
+          -- Restart mapping in the new area
+          lotj.mapper.stopMapping(true)
+          if lotj.mapper.current.ship_name then
+            lotj.mapper.logDebug("Mapper starting from ship boarding")
+            lotj.mapper.startMapping(lotj.mapper.current.ship_name)
+            return
+          else
+            lotj.mapper.log("You entered a ship with an unknown name. To begin mapping here <yellow>map start <ship name><reset>.")
+          end
+        -- We are not mapping
+        else
+          -- Give a hint to start mapping here
+          lotj.mapper.cached_area = lotj.mapper.current.ship_name
+          local txt = ""
+          if lotj.mapper.cached_area then
+            lotj.mapper.log("You boarded <yellow>"..lotj.mapper.cached_area.."<reset>. To begin mapping here <yellow>map start<reset>.")
+          else
+            lotj.mapper.log("You entered a ship with an unknown name. To begin mapping here <yellow>map start <ship name><reset>.")
+          end
+        end
+      -- We're on the same ship as last room
+      else
+        -- We don't care about doing anything in this case
+        -- If we're mapping continue mapping, if not doesn't matter
+      end
+    -- We came from a planet room
+    else
+      if lotj.mapper.mappingArea then
+        -- Restart mapping in the new area
+        lotj.mapper.stopMapping(true)
+        if lotj.mapper.current.ship_name then
+          lotj.mapper.logDebug("Mapper starting from a planet room")
+          lotj.mapper.startMapping(lotj.mapper.current.ship_name)
+          return
+        else
+          lotj.mapper.log("You entered a ship with an unknown name. To begin mapping here <yellow>map start <ship name><reset>.")
+        end
+      -- We are not mapping
+      else
+        -- Give a hint to start mapping here
+        if lotj.mapper.current.ship_name then
+          lotj.mapper.cached_area = lotj.mapper.current.ship_name
+          lotj.mapper.log("You boarded <yellow>"..lotj.mapper.cached_area.."<reset>. To begin mapping here <yellow>map start<reset>.")
+        else
+          lotj.mapper.log("You entered a ship with an unknown name. To begin mapping here <yellow>map start <ship name><reset>.")
+        end
+      end
+    end
+  -- We are on a planet
+  else
+    -- We came from a ship room
+    if lotj.mapper.last.ship then
+      -- We are mapping
+      if lotj.mapper.mappingArea then
+        -- Restart mapping in the new area
+        lotj.mapper.stopMapping(true)
+        lotj.mapper.logDebug("Mapping starting from a ship room")
+        lotj.mapper.startMapping(lotj.mapper.current.planet)
+        return
+      -- We are not mapping
+      else
+        -- Give a hint to start mapping here
+        lotj.mapper.cached_area = lotj.mapper.current.planet
+        lotj.mapper.log("Welcome to <yellow>"..lotj.mapper.cached_area.."<reset>. To begin mapping here <yellow>map start<reset>.")
+      end
+    -- We came from a planet room
+    else
+      -- We don't care about doing anything in this case
+      -- If we're mapping continue mapping, if not doesn't matter
+    end
+  end
+  -- Process room by default
   lotj.mapper.processCurrentRoom()
 end
 
@@ -613,6 +777,18 @@ end
 -- Utility Functions
 ------------------------------------------------------------------------------
 
+function lotj.mapper.setCurrentShipName(name)
+  lotj.mapper.currentShipName = name
+  lotj.mapper.cached_area = name
+  if not name then lotj.mapper.cached_area = nil end
+end
+
+function lotj.mapper.enterDarkRoom()
+  if not lotj.mapper.resumeMapping then
+    lotj.mapper.stopMapping(true)
+    lotj.mapper.current.vnum = nil
+  end
+end
 
 function lotj.mapper.log(text)
   cecho("[<cyan>LOTJ Mapper<reset>] "..text.."\n")
@@ -641,6 +817,43 @@ function lotj.mapper.getRoomByCoords(areaName, x, y, z)
     end
   end
   return nil
+end
+
+-- Print a list of areas and their room counts
+function lotj.mapper.printAreaList()
+  local areaTable = getAreaTable()
+  if not areaTable or table.is_empty(areaTable) then
+    lotj.mapper.log("No areas found.")
+    return
+  end
+
+  lotj.mapper.log("Available areas:")
+  for name, areaId in pairs(areaTable) do
+    local roomCount = #getAreaRooms1(areaId)
+    cecho("  <yellow>"..name.."<reset> - <green>"..roomCount.."<reset> rooms\n")
+  end
+end
+
+function lotj.mapper.purgeAreas(num)
+  num = tonumber(num) or 2
+  local areaTable = getAreaTable()
+  if not areaTable or table.is_empty(areaTable) then
+    lotj.mapper.log("No areas found.")
+    return
+  end
+
+  local purged = 0
+  for name, areaId in pairs(areaTable) do
+    local roomCount = #getAreaRooms1(areaId)
+    if roomCount <= num then
+      if name ~= "Default Area" then
+        lotj.mapper.deleteArea(name)
+        purged = purged + 1
+      end
+    end
+  end
+
+  lotj.mapper.log("Purged " .. purged .. " area(s) with " .. num .. " or fewer rooms.")
 end
 
 function lotj.mapper.searchRooms(roomName)

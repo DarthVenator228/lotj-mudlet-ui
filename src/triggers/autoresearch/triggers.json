@@ -85,7 +85,7 @@
         "type": "regex"
       }
     ],
-    "script": "if lotj.autoResearch.enabled then echo(\"\\n\"); expandAlias(\"autoresearch next\", false) end"
+    "script": "if lotj.autoResearch.enabled then echo(\"\\n\"); lotj.autoResearch.command(\"next\") end"
   },
   {
     "name": "autoresearch.continue",
@@ -99,7 +99,7 @@
         "type": "regex"
       }
     ],
-    "script": "if lotj.autoResearch.enabled then echo(\"\\n\"); expandAlias(\"autoresearch continue\", false) end"
+    "script": "if lotj.autoResearch.enabled then echo(\"\\n\"); lotj.autoResearch.command(\"continue\") end"
   },
   {
     "name": "autoresearch.interrupted",
