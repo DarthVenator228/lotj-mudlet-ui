@@ -41,5 +41,14 @@
         "type": "substring"
       }
     ]
+  },
+  {
+    "name": "hyperspace-calculation",
+    "patterns": [
+      {
+        "pattern": "^\\[Status\\]: (Hyperspace) calculations have been completed\\.$",
+        "type": "regex"
+      }
+    ]
   }
 ]
