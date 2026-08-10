@@ -443,7 +443,7 @@ function lotj.mapper.processCurrentRoom()
   if lotj.mapper.last ~= nil then
     lastRoom = lotj.mapper.getRoomByVnum(lotj.mapper.last.vnum)
   end
-  if lotj.mapper.last.planet == nil then
+  if lotj.mapper.last.planet ~= lotj.mapper.current.planet then
     lastRoom = nil
   end
 
@@ -561,7 +561,7 @@ function lotj.mapper.processCurrentRoom()
       end
     end
   end
-  
+
   -- Link this room with the previous one if they have a matching set of exit stubs
   if lastRoom ~= nil and moveDir ~= nil then
     -- Always set the exit we took even if it wasn't a stub. The direction we just moved is our best
