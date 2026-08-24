@@ -1,7 +1,6 @@
 mudlet = mudlet or {}; mudlet.mapper_script = true
 lotj = lotj or {}
 lotj.mapper = lotj.mapper or {}
-lotj.mapper.resumeMapping = true
 
 -- lotj.mapper.debug = true -- Disable for release
 
