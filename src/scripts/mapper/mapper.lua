@@ -103,7 +103,7 @@ function lotj.mapper.mapCommand(input)
     return
   end
 
-  _, _, cmd, args = string.find(input, "([^%s]+)%s*(.*)")
+  local _, _, cmd, args = string.find(input, "([^%s]+)%s*(.*)")
   cmd = string.lower(cmd)
 
   if cmd == "help" then
@@ -315,8 +315,8 @@ function lotj.mapper.shiftCurrentRoom(direction)
   local vnum = lotj.mapper.current.vnum
   local room = lotj.mapper.getRoomByVnum(vnum)
   if room ~= nil then
-    currentX, currentY, currentZ = getRoomCoordinates(vnum)
-    dx, dy, dz = unpack(dir.xyzDiff)
+    local currentX, currentY, currentZ = getRoomCoordinates(vnum)
+    local dx, dy, dz = unpack(dir.xyzDiff)
     setRoomCoordinates(vnum, currentX+dx, currentY+dy, currentZ+dz)
     updateMap()
     centerview(vnum)
@@ -335,18 +335,18 @@ function lotj.mapper.setRoomCoords(areaName)
     lotj.mapper.logError("This command only works for imm characters.")
     return
   end
-  
+
   local areaId = getAreaTable()[areaName]
   if not areaId then
     lotj.mapper.logError("Area not found by name "..areaName)
     return
   end
-  
+
   for _, roomId in ipairs(getAreaRooms(areaId)) do
     local x, y, z = getRoomCoordinates(roomId)
     send("at "..roomId.." redit xyz "..x.." "..y.." "..z)
   end
-end  
+end
 
 
 ------------------------------------------------------------------------------
@@ -510,6 +510,15 @@ function lotj.mapper.processCurrentRoom()
         local dx, dy, dz = unpack(moveDir.xyzDiff)
         lotj.mapper.log("Positioning new room "..moveDir.long.." of the previous room based on movement command.")
         setRoomCoordinates(vnum, lastX+dx, lastY+dy, lastZ+dz)
+
+        -- Perform turbolift checks
+        local areaID = getRoomArea(vnum)
+        local tx, ty, tz = getRoomCoordinates(vnum)
+        if getTableSize(getRoomsByPosition(areaID, tx, ty, tz)) > 1 and lotj.mapper.last.amenity == "Turbolift" then
+          tempTimer(.1, [[
+            lotj.mapper.log("Room occupied after turbolift movement, use <yellow>map shift<reset> to put it in the correct location.")
+          ]])
+        end
       else
         -- We didn't have a valid movement command but we still changed rooms, so try to guess
         -- where this room should be relative to the last.
@@ -533,7 +542,17 @@ function lotj.mapper.processCurrentRoom()
           end
         end
 
-        if matchingStubDir ~= nil then
+        if lotj.mapper.current.ship and next(lotj.mapper.last.exits) == nil then
+          lotj.mapper.logDebug("Potentially used a legacy turbolift, finding suitable room location.")
+          local areaID = getRoomArea(vnum)
+          local tx, ty, tz = getRoomCoordinates(vnum)
+          while getTableSize(getRoomsByPosition(areaID, tx, ty, tz)) > 1 do
+            tz = tz + 1
+            lotj.mapper.logDebug("Turbolift exit room occupied, trying again on layer "..tz..".")
+            setRoomCoordinates(vnum, tx, ty, tz)
+          end
+          lotj.mapper.log("Turbolift exit created, you may need to manually <yellow>map shift<reset> to correct placement.")
+        elseif matchingStubDir ~= nil then
           local dx, dy, dz = unpack(matchingStubDir.xyzDiff)
           setRoomCoordinates(vnum, lastX+dx, lastY+dy, lastZ+dz)
           lotj.mapper.log("Positioning new room "..matchingStubDir.long.." of the previous room based on matching closed doors.")
@@ -588,7 +607,7 @@ function lotj.mapper.checkAmenityLine(roomName, amenityName)
     return
   end
 
-  amenityData = amenityEnvCodes[string.lower(amenityName)]
+  local amenityData = amenityEnvCodes[string.lower(amenityName)]
   if amenityData == nil then
     return
   end
@@ -597,14 +616,12 @@ function lotj.mapper.checkAmenityLine(roomName, amenityName)
   local addAmenityRoom = nil
   if lotj.mapper.current.name:gsub("[& ]", ""):lower() == roomName:gsub("[& ]", ""):lower() then
     addAmenityRoom = lotj.mapper.current
+    addAmenityRoom.amenity = amenityName
   else
     return
   end
-
-  -- This is being invoked on seeing a room name and we don't want it mushed into that line.
   echo("\n")
-
-  lotj.mapper.log("Set amenity <yellow>"..amenityName.."<reset> on room <yellow>"..addAmenityRoom.name.."<reset>")
+  lotj.mapper.logDebug("Set amenity <yellow>"..amenityName.."<reset> on current room.")
   setRoomEnv(addAmenityRoom.vnum, amenityData.envCode)
   setRoomChar(addAmenityRoom.vnum, amenityData.symbol)
   updateMap()
@@ -860,7 +877,7 @@ function lotj.mapper.purgeAreas(num)
   for name, areaId in pairs(areaTable) do
     local roomCount = #getAreaRooms1(areaId)
     if roomCount <= num then
-      if name ~= "Default Area" then
+      if name ~= "Default Area" and name ~= "Ring of Kafrene" then
         lotj.mapper.deleteArea(name)
         purged = purged + 1
       end
