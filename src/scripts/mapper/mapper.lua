@@ -514,11 +514,16 @@ function lotj.mapper.processCurrentRoom()
         -- Perform turbolift checks
         local areaID = getRoomArea(vnum)
         local tx, ty, tz = getRoomCoordinates(vnum)
-        if getTableSize(getRoomsByPosition(areaID, tx, ty, tz)) > 1 and lotj.mapper.last.amenity == "Turbolift" then
-          tempTimer(.1, [[
-            lotj.mapper.log("Room occupied after turbolift movement, use <yellow>map shift<reset> to put it in the correct location.")
-          ]])
+        tz = tz + 2
+        setRoomCoordinates(vnum, tx, ty, tz)
+        while getTableSize(getRoomsByPosition(areaID, tx, ty, tz)) > 1 do
+          tz = tz + 2
+          lotj.mapper.logDebug("Turbolift exit room occupied, trying again on layer "..tz..".")
+          setRoomCoordinates(vnum, tx, ty, tz)
         end
+        tempTimer(.1, [[
+          lotj.mapper.log("Turbolift exit created, you may need to manually <yellow>map shift<reset> to correct placement.")
+        ]])
       else
         -- We didn't have a valid movement command but we still changed rooms, so try to guess
         -- where this room should be relative to the last.
@@ -546,12 +551,16 @@ function lotj.mapper.processCurrentRoom()
           lotj.mapper.logDebug("Potentially used a legacy turbolift, finding suitable room location.")
           local areaID = getRoomArea(vnum)
           local tx, ty, tz = getRoomCoordinates(vnum)
+          tz = tz + 2
+          setRoomCoordinates(vnum, tx, ty, tz)
           while getTableSize(getRoomsByPosition(areaID, tx, ty, tz)) > 1 do
-            tz = tz + 1
+            tz = tz + 2
             lotj.mapper.logDebug("Turbolift exit room occupied, trying again on layer "..tz..".")
             setRoomCoordinates(vnum, tx, ty, tz)
           end
-          lotj.mapper.log("Turbolift exit created, you may need to manually <yellow>map shift<reset> to correct placement.")
+          tempTimer(.1, [[
+            lotj.mapper.log("Turbolift exit created, you may need to manually <yellow>map shift<reset> to correct placement.")
+          ]])
         elseif matchingStubDir ~= nil then
           local dx, dy, dz = unpack(matchingStubDir.xyzDiff)
           setRoomCoordinates(vnum, lastX+dx, lastY+dy, lastZ+dz)
