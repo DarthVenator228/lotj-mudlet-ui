@@ -491,7 +491,7 @@ function lotj.mapper.processCurrentRoom()
       end
     end
 
-    if lotj.mapper.current.x ~= nil and (not lastRoom or lastRoomAtPresetCoords) then
+    if lotj.mapper.current.x and (lastRoomAtPresetCoords or lotj.mapper.hailed) then
       -- This room has x/y/z set ingame and we're not coming from a lastRoom with
       -- a custom direction, so we should honor what the game said to use.
       setRoomCoordinates(vnum, lotj.mapper.current.x, lotj.mapper.current.y, lotj.mapper.current.z)
@@ -604,6 +604,7 @@ function lotj.mapper.processCurrentRoom()
     end
   end
 
+  lotj.mapper.hailed = nil
   centerview(vnum)
 end
 
@@ -652,7 +653,10 @@ function lotj.mapper.onEnterRoom()
     exits = gmcp.Room.Info.exits or {},
     planet = gmcp.Room.Info.planet,
     ship = lotj.mapper.current.ship,
-    ship_name = lotj.mapper.currentShipName
+    ship_name = lotj.mapper.currentShipName,
+    x = gmcp.Room.Info.x,
+    y = gmcp.Room.Info.y,
+    z = gmcp.Room.Info.z
   }
   if flag then lotj.mapper.last = lotj.mapper.current end
 
@@ -668,11 +672,10 @@ function lotj.mapper.onEnterRoom()
   -- Hailing mapping not supported in areas without gmcp coordinates
   if not gmcp.Room.Info.x then
     if lotj.mapper.hailed then
-      lotj.mapper.logDebug("Hailed in an unsuported area, stopping mapper.")
+      lotj.mapper.log("Hailed in an unsuported area, stopping mapper.")
       lotj.mapper.stopMapping(true)
     end
   end
-  lotj.mapper.hailed = nil
 
   local vnum = lotj.mapper.current.vnum
   local room = lotj.mapper.getRoomByVnum(vnum)

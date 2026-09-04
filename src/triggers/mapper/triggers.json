@@ -47,7 +47,7 @@
     "name": "room-amenities",
     "patterns": [
       {
-        "pattern": "^(.+) \\[([ \\w]+)\\] *$",
+        "pattern": "^(.+) \\[([ \\w]+)\\].*$",
         "type": "regex"
       }
     ],
