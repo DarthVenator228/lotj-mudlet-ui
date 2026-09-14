@@ -13,6 +13,21 @@
     ]
   },
   {
+    "name": "clickable_mail",
+    "patterns": [
+      {
+        "pattern": "^ID\\s*\\|\\s*(?:SENDER|FROM)\\s*\\|\\s*(?:RECIPIENT|TO)\\s*\\|\\s*SUBJECT\\s*$",
+        "type": "regex"
+      },
+      {
+        "pattern": "^-+$",
+        "type": "regex"
+      }
+    ],
+    "multiline": "yes",
+    "multilineDelta": "1"
+  },
+  {
     "name": "study",
     "patterns": [
         {

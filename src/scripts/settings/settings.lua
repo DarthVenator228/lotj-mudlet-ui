@@ -178,6 +178,14 @@ local primaryConfigDefinition = {
           icon = "📗"
         },
         {
+          name = "Clickable Mail",
+          key  = "clickable_mail",
+          type = "toggle",
+          default = true,
+          description = "Enable a clickable link for standard format mail entries",
+          icon = "📬"
+        },
+        {
           name = "Study",
           key = "study",
           type = "toggle",
