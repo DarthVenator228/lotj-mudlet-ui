@@ -554,11 +554,12 @@ local function stylePoint(point, gov, currentSystem, planetImage, pointSize, man
     font-family: ]]..getFont()..[[;
   ]])
   coordLabel:setFontSize(getFontSize())
+  coordLabel:hide()
   point:setOnEnter(function()
-    point:flash()
-
-    coordLabel:show()
-    coordLabel:raise()
+    if lotj.settings.galmap_coords then
+      coordLabel:show()
+      coordLabel:raise()
+    end
   end)
   point:setOnLeave(function()
     coordLabel:hide()
