@@ -3,10 +3,6 @@ lotj = lotj or {}
 lotj.mapper = lotj.mapper or {}
 lotj.settings = lotj.settings or {}
 
-if lotj.settings.mapper_debug ~= "None" then
-  lotj.mapper.debug = true
-end
-
 local dirs = {}
 -- The order of these is important. The indices of the directions must match
 -- https://github.com/Mudlet/Mudlet/blob/9c13f8f946f5b82c0c2e817dab5f42588cee17e0/src/TRoom.h#L38
@@ -378,6 +374,10 @@ function lotj.mapper.setup()
     geyserMapper:raiseAll()
   end
   setMapZoom(15)
+
+  if lotj.settings.mapper_debug and lotj.settings.mapper_debug ~= "None" then
+    lotj.mapper.debug = true
+  end
 
   local hasAnyAreas = false
   for name, id in pairs(getAreaTable()) do
